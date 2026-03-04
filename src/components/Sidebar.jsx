@@ -16,7 +16,7 @@ export default function Sidebar({
   const [creatingFolder,  setCreatingFolder]  = useState(false)
   const [newFolderName,   setNewFolderName]   = useState('')
 
-  const allTypes = [...BUILTIN_TYPES, ...customTypes].filter(t => !t.virtual)
+  const allTypes = [...BUILTIN_TYPES.filter(b => !customTypes.some(c => c.id === b.id)), ...customTypes].filter(t => !t.virtual)
   const matchesSearch = c => !search || c.name.toLowerCase().includes(search.toLowerCase())
   const toggleFolder  = id => setExpandedFolders(prev => { const s=new Set(prev); s.has(id)?s.delete(id):s.add(id); return s })
 
@@ -27,9 +27,24 @@ export default function Sidebar({
   const handleDragOver   = e => e.preventDefault()
   const handleDrop = (e, folderId) => {
     e.preventDefault()
+    e.stopPropagation()
     const cardId = e.dataTransfer.getData('text/cardId')
     if (cardId) onUpdateCard(cardId, { folderId: folderId || null })
     setDragOverId(null); setDragCounters({})
+  }
+
+  // Auto-expand folders on drag hover
+  const dragExpandTimerRef = useRef(null)
+  const handleFolderDragEnter = (e, folderId) => {
+    handleDragEnter(e, folderId)
+    clearTimeout(dragExpandTimerRef.current)
+    dragExpandTimerRef.current = setTimeout(() => {
+      setExpandedFolders(prev => { const s = new Set(prev); s.add(folderId); return s })
+    }, 600)
+  }
+  const handleFolderDragLeave = (e, folderId) => {
+    handleDragLeave(e, folderId)
+    clearTimeout(dragExpandTimerRef.current)
   }
 
   const renderCard = (card, depth=0) => {
@@ -76,7 +91,7 @@ export default function Sidebar({
           onToggle={() => toggleFolder(folder.id)}
           onRename={name => onUpdateFolder(folder.id,{name})}
           onDelete={() => { if(confirm(`Supprimer "${folder.name}" ?`)) onDeleteFolder(folder.id) }}
-          onDragEnter={e=>handleDragEnter(e,folder.id)} onDragLeave={e=>handleDragLeave(e,folder.id)}
+          onDragEnter={e=>handleFolderDragEnter(e,folder.id)} onDragLeave={e=>handleFolderDragLeave(e,folder.id)}
           onDragOver={handleDragOver} onDrop={e=>handleDrop(e,folder.id)}
         />
         {isExpanded && (
@@ -169,9 +184,10 @@ export default function Sidebar({
           />
         ) : (
           <>
-            <button onClick={()=>setShowNewCard(true)} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:5, padding:'6px 0', borderRadius:7, border:'none', background:'rgba(200,160,100,0.08)', color:'#c8a064', fontSize:12, cursor:'pointer', transition:'background 0.12s', fontFamily:"'DM Sans',sans-serif" }}
+            <button onClick={()=>setShowNewCard(true)} title="Nouveau document"
+              style={{ padding:'6px 9px', borderRadius:7, border:'none', background:'rgba(200,160,100,0.08)', color:'#c8a064', cursor:'pointer', transition:'background 0.12s' }}
               onMouseEnter={e=>e.currentTarget.style.background='rgba(200,160,100,0.15)'} onMouseLeave={e=>e.currentTarget.style.background='rgba(200,160,100,0.08)'}>
-              <Icon name="plus" size={12} /> Nouveau
+              <Icon name="card" size={14} />
             </button>
             <button onClick={()=>setCreatingFolder(true)} title="Nouveau dossier"
               style={{ padding:'6px 9px', borderRadius:7, border:'none', background:'rgba(255,255,255,0.04)', color:'#4a3a28', cursor:'pointer', transition:'color 0.12s' }}

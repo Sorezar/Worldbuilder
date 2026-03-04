@@ -8,12 +8,42 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
   const type           = getType(card.typeId, customTypes)
   const effectiveProps = getEffectiveProps(card.typeId, customTypes)
   const [addingExtraProp, setAddingExtraProp] = useState(false)
+  const [dragPropId, setDragPropId] = useState(null)
+  const [dragOverPropId, setDragOverPropId] = useState(null)
   const fileRef = useRef()
 
   const upd          = patch => onUpdate(card.id, patch)
   const updProp      = (propId, value) => upd({ props: { ...card.props, [propId]: value } })
   const updExtraProp = (epId, value) => upd({ extraProps: (card.extraProps || []).map(ep => ep.id === epId ? { ...ep, value } : ep) })
   const removeExtra  = epId => upd({ extraProps: (card.extraProps || []).filter(ep => ep.id !== epId) })
+  const renameProp   = (propId, newName) => upd({ propNameOverrides: { ...(card.propNameOverrides || {}), [propId]: newName } })
+  const nameOverrides = card.propNameOverrides || {}
+
+  // Merge all props into one ordered list
+  const extraProps = card.extraProps || []
+  const allProps = [...effectiveProps.map(p => ({ ...p, _source: 'default' })), ...extraProps.map(ep => ({ ...ep, _source: 'extra' }))]
+  const propOrder = card.propOrder || allProps.map(p => p.id)
+  const orderedProps = [
+    ...propOrder.map(id => allProps.find(p => p.id === id)).filter(Boolean),
+    ...allProps.filter(p => !propOrder.includes(p.id)),
+  ]
+
+  const handlePropDragStart = (e, propId) => { setDragPropId(propId); e.dataTransfer.effectAllowed = 'move' }
+  const handlePropDragOver = (e, propId) => { e.preventDefault(); if (propId !== dragPropId) setDragOverPropId(propId) }
+  const handlePropDrop = (e, targetId) => {
+    e.preventDefault()
+    if (!dragPropId || dragPropId === targetId) { setDragPropId(null); setDragOverPropId(null); return }
+    const ids = orderedProps.map(p => p.id)
+    const fromIdx = ids.indexOf(dragPropId)
+    const toIdx = ids.indexOf(targetId)
+    if (fromIdx < 0 || toIdx < 0) { setDragPropId(null); setDragOverPropId(null); return }
+    const newOrder = [...ids]
+    newOrder.splice(fromIdx, 1)
+    newOrder.splice(toIdx, 0, dragPropId)
+    upd({ propOrder: newOrder })
+    setDragPropId(null); setDragOverPropId(null)
+  }
+  const handlePropDragEnd = () => { setDragPropId(null); setDragOverPropId(null) }
 
   const handleImageUpload = e => {
     const file = e.target.files[0]
@@ -95,30 +125,54 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
           </div>
         </div>
 
-        {/* Default props */}
-        {effectiveProps.length > 0 && (
-          <PropGroup>
-            {effectiveProps.map(prop => (
-              <PropField key={prop.id} prop={prop} value={card.props?.[prop.id]}
-                onChange={v => updProp(prop.id, v)}
+        {/* Aliases (fixed, not draggable) */}
+        {orderedProps.some(p => p.id === 'aliases') && (() => {
+          const aliasesProp = orderedProps.find(p => p.id === 'aliases')
+          return (
+            <PropGroup>
+              <PropField prop={aliasesProp}
+                value={card.props?.['aliases']}
+                onChange={v => updProp('aliases', v)}
                 cards={cards} customTypes={customTypes} onOpenCard={onOpenCard}
                 onCreateCard={onCreateCard} allTypes={allTypes} calendars={calendars}
               />
-            ))}
-          </PropGroup>
-        )}
+            </PropGroup>
+          )
+        })()}
 
-        {/* Extra props */}
-        {(card.extraProps || []).length > 0 && (
+        {/* All other props (merged, ordered, draggable) */}
+        {orderedProps.filter(p => p.id !== 'aliases').length > 0 && (
           <PropGroup>
-            {(card.extraProps || []).map(ep => (
-              <PropField key={ep.id} prop={ep} value={ep.value}
-                onChange={v => updExtraProp(ep.id, v)}
-                cards={cards} customTypes={customTypes} onOpenCard={onOpenCard}
-                onCreateCard={onCreateCard} allTypes={allTypes} calendars={calendars}
-                onRemoveProp={() => removeExtra(ep.id)}
-              />
-            ))}
+            {orderedProps.filter(p => p.id !== 'aliases').map(prop => {
+              const isExtra = prop._source === 'extra'
+              const isDragOver = dragOverPropId === prop.id
+              return (
+                <div key={prop.id}
+                  draggable
+                  onDragStart={e => handlePropDragStart(e, prop.id)}
+                  onDragOver={e => handlePropDragOver(e, prop.id)}
+                  onDrop={e => handlePropDrop(e, prop.id)}
+                  onDragEnd={handlePropDragEnd}
+                  style={{ borderTop: isDragOver ? '2px solid rgba(200,160,100,0.5)' : '2px solid transparent', opacity: dragPropId === prop.id ? 0.4 : 1 }}
+                >
+                  <PropField prop={prop}
+                    value={isExtra ? prop.value : card.props?.[prop.id]}
+                    onChange={v => isExtra ? updExtraProp(prop.id, v) : updProp(prop.id, v)}
+                    cards={cards} customTypes={customTypes} onOpenCard={onOpenCard}
+                    onCreateCard={onCreateCard} allTypes={allTypes} calendars={calendars}
+                    onRemoveProp={isExtra ? () => removeExtra(prop.id) : undefined}
+                    displayName={nameOverrides[prop.id]}
+                    onRename={name => renameProp(prop.id, name)}
+                    onEditProp={patch => {
+                      if (isExtra) {
+                        upd({ extraProps: (card.extraProps || []).map(ep => ep.id === prop.id ? { ...ep, ...patch } : ep) })
+                      }
+                    }}
+                    isExtraProp={isExtra}
+                  />
+                </div>
+              )
+            })}
           </PropGroup>
         )}
 
@@ -161,8 +215,10 @@ function PropGroup({ children }) {
 }
 
 // ─── PropField ────────────────────────────────────────────────
-function PropField({ prop, value, onChange, cards, customTypes, onOpenCard, onCreateCard, allTypes, onRemoveProp, calendars }) {
+function PropField({ prop, value, onChange, cards, customTypes, onOpenCard, onCreateCard, allTypes, onRemoveProp, calendars, displayName, onRename, onEditProp, isExtraProp }) {
   const [addingRef, setAddingRef] = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const [showEditor, setShowEditor] = useState(false)
 
   const targetTypes   = prop.targetTypeIds || []
   const eligibleCards = targetTypes.length > 0
@@ -229,23 +285,235 @@ function PropField({ prop, value, onChange, cards, customTypes, onOpenCard, onCr
 
     if (prop.fieldType === FIELD_TYPES.DATE) {
       return <DateField value={value||''} onChange={onChange} calendars={calendars||[]} />
-    }    return <span style={{ color: '#3a2a18', fontSize: 12 }}>—</span>
+    }
+    return <span style={{ color: '#3a2a18', fontSize: 12 }}>—</span>
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', minHeight: 34, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-      <div style={{ width: 145, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '7px 9px 7px 11px', color: '#5a4a38', fontSize: 12 }}>
-        <span style={{ flex: 1 }}>{prop.name}</span>
-        {onRemoveProp && (
-          <button onClick={onRemoveProp} style={{ background: 'none', border: 'none', color: '#3a2a18', cursor: 'pointer', fontSize: 9, padding: 0, lineHeight: 1 }}
-            onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-            onMouseLeave={e => e.currentTarget.style.color = '#3a2a18'}
-          >✕</button>
+    <div style={{ display: 'flex', alignItems: 'flex-start', minHeight: 34, borderBottom: '1px solid rgba(255,255,255,0.04)', position: 'relative' }}
+      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      {/* Drag handle */}
+      <div style={{ width: 16, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch', cursor: 'grab', opacity: hovered ? 0.5 : 0, transition: 'opacity 0.12s', color: '#5a4a38', fontSize: 10, letterSpacing: '1px' }}>
+        <Icon name="drag" size={10} />
+      </div>
+      <div style={{ width: 130, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '7px 4px 7px 0', color: '#5a4a38', fontSize: 12, position: 'relative' }}>
+        <span style={{ flex: 1, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          onClick={() => { if (onRename || onRemoveProp) setShowEditor(true) }}>
+          {displayName || prop.name}
+        </span>
+        {showEditor && (
+          <PropEditorPopup
+            prop={prop}
+            displayName={displayName || prop.name}
+            onRename={onRename}
+            onRemove={onRemoveProp}
+            onEditProp={onEditProp}
+            isExtraProp={isExtraProp}
+            allTypes={allTypes}
+            onClose={() => setShowEditor(false)}
+          />
         )}
       </div>
       <div style={{ flex: 1, padding: '4px 11px 4px 0', minWidth: 0 }}>
         {renderValue()}
       </div>
+    </div>
+  )
+}
+
+// ─── Emoji grid data ─────────────────────────────────────────
+const EMOJI_GRID = [
+  '😀','😂','😍','🥳','😎','🤔','😢','😡','🥺','🤩',
+  '👤','👥','👑','🧙','🧝','🧛','🧟','🦸','👻','💀',
+  '⚔️','🛡','🗡','🏹','🔮','✨','💎','🔥','❄️','⚡',
+  '🌍','🗺','🏰','🏛','🏙','🏡','⛪','🗿','🌋','🏔',
+  '📍','🌊','🌲','🌸','🍃','🌿','🦎','🐉','🦅','🐺',
+  '📜','📖','📚','📝','📅','📌','🔖','🏷','📊','📈',
+  '⚜️','🪶','🎭','🎪','🎉','🎵','🔔','💡','🕯','🧪',
+  '⚗️','🌀','⛩','🔭','⚖️','🧭','🗝','💰','🎲','🃏',
+  '❤️','💔','💜','💙','💚','💛','🧡','🤎','🖤','🤍',
+  '⭐','✦','◆','●','■','▲','☰','#','☀️','🌙',
+]
+
+// ─── PropEditorPopup ─────────────────────────────────────────
+function PropEditorPopup({ prop, displayName, onRename, onRemove, onEditProp, isExtraProp, allTypes, onClose }) {
+  const [name, setName] = useState(displayName || prop.name)
+  const [emoji, setEmoji] = useState(prop.emoji || '')
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [emojiSearch, setEmojiSearch] = useState('')
+  const [showTypeMenu, setShowTypeMenu] = useState(false)
+  const ref = useRef()
+
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) onClose() }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [onClose])
+
+  // Primitive field types
+  const PRIMITIVE_TYPES = [
+    { id: 'text', label: 'Texte', icon: '☰' },
+    { id: 'number', label: 'Numérique', icon: '#' },
+    { id: 'date', label: 'Date', icon: '📅' },
+  ]
+
+  // Card types (non-virtual, root-level) as reference options
+  const cardTypes = (allTypes || []).filter(t => !t.virtual && !t.parentId)
+
+  // Determine current display label
+  const getCurrentTypeLabel = () => {
+    const prim = PRIMITIVE_TYPES.find(t => t.id === prop.fieldType)
+    if (prim && prop.fieldType !== 'card_ref') return prim.label
+    // It's a card_ref — find the target type
+    const targetId = prop.targetTypeIds?.[0]
+    if (targetId) {
+      const ct = (allTypes || []).find(t => t.id === targetId)
+      if (ct) return ct.name
+    }
+    return 'Texte'
+  }
+
+  const commitName = () => {
+    if (name.trim() && name.trim() !== (displayName || prop.name)) {
+      onRename?.(name.trim())
+    }
+  }
+
+  const selectEmoji = em => {
+    setEmoji(em)
+    if (isExtraProp && onEditProp) onEditProp({ emoji: em })
+    setShowEmojiPicker(false)
+  }
+
+  const changeToPrimitive = typeId => {
+    if (isExtraProp && onEditProp) onEditProp({ fieldType: typeId, targetTypeIds: undefined })
+    setShowTypeMenu(false)
+  }
+
+  const changeToCardRef = cardTypeId => {
+    if (isExtraProp && onEditProp) onEditProp({ fieldType: 'card_ref', targetTypeIds: [cardTypeId] })
+    setShowTypeMenu(false)
+  }
+
+  const isCurrentPrimitive = id => prop.fieldType === id && prop.fieldType !== 'card_ref'
+  const isCurrentCardRef = typeId => prop.fieldType === 'card_ref' && prop.targetTypeIds?.[0] === typeId
+
+  const filteredEmojis = emojiSearch
+    ? EMOJI_GRID.filter(e => e.includes(emojiSearch))
+    : EMOJI_GRID
+
+  return (
+    <div ref={ref} style={{
+      position: 'absolute', top: '100%', left: -16, zIndex: 500, marginTop: 2,
+      background: 'rgba(10,6,1,0.92)', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
+      border: '1px solid rgba(255,200,120,0.14)', borderRadius: 12,
+      width: 240, boxShadow: '0 8px 32px rgba(0,0,0,0.8)', overflow: 'visible',
+    }}>
+      {/* Emoji + Name */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
+        <button onClick={() => { setShowEmojiPicker(v => !v); setShowTypeMenu(false) }}
+          style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid rgba(255,200,120,0.15)', background: showEmojiPicker ? 'rgba(200,160,100,0.15)' : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14, flexShrink: 0 }}>
+          {emoji || '☰'}
+        </button>
+        <input autoFocus value={name} onChange={e => setName(e.target.value)}
+          onBlur={commitName}
+          onKeyDown={e => { if (e.key === 'Enter') { commitName(); onClose() } if (e.key === 'Escape') onClose() }}
+          style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 8px', color: '#e2d9c8', fontSize: 13, outline: 'none', fontFamily: "'DM Sans', sans-serif" }}
+        />
+      </div>
+
+      {/* Emoji picker panel */}
+      {showEmojiPicker && (
+        <div style={{ padding: '8px 10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <input value={emojiSearch} onChange={e => setEmojiSearch(e.target.value)}
+            placeholder="Rechercher des icônes…"
+            style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 8px', color: '#c8b89a', fontSize: 11, outline: 'none', marginBottom: 6, boxSizing: 'border-box' }}
+          />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 2, maxHeight: 140, overflowY: 'auto' }}>
+            {filteredEmojis.map((em, i) => (
+              <button key={i} onClick={() => selectEmoji(em)}
+                style={{ width: '100%', aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', background: emoji === em ? 'rgba(200,160,100,0.2)' : 'transparent', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 13, padding: 0, transition: 'background 0.08s' }}
+                onMouseEnter={e => { if (emoji !== em) e.currentTarget.style.background = 'rgba(255,255,255,0.08)' }}
+                onMouseLeave={e => { if (emoji !== em) e.currentTarget.style.background = 'transparent' }}>
+                {em}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Type */}
+      <div style={{ position: 'relative' }}>
+        <div onClick={() => { setShowTypeMenu(v => !v); setShowEmojiPicker(false) }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'background 0.1s' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+          <span style={{ fontSize: 12, color: '#5a4a38' }}>Type</span>
+          <span style={{ fontSize: 12, color: '#8a7a68', display: 'flex', alignItems: 'center', gap: 4 }}>
+            {getCurrentTypeLabel()}
+            <Icon name="chevron_right" size={9} style={{ color: '#4a3a28' }} />
+          </span>
+        </div>
+
+        {/* Type selection dropdown */}
+        {showTypeMenu && (
+          <div style={{
+            position: 'absolute', top: 0, left: '100%', marginLeft: 4, zIndex: 510,
+            background: 'rgba(10,6,1,0.92)', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
+            border: '1px solid rgba(255,200,120,0.14)', borderRadius: 10,
+            width: 180, boxShadow: '0 8px 32px rgba(0,0,0,0.8)', overflow: 'hidden', maxHeight: 320, overflowY: 'auto',
+          }}>
+            {/* Primitive types */}
+            {PRIMITIVE_TYPES.map(opt => (
+              <TypeMenuItem key={opt.id} icon={opt.icon} label={opt.label}
+                active={isCurrentPrimitive(opt.id)} onClick={() => changeToPrimitive(opt.id)} />
+            ))}
+
+            {/* Separator */}
+            {cardTypes.length > 0 && (
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '2px 0', padding: '4px 11px 2px' }}>
+                <span style={{ fontSize: 9, color: '#3a2a18', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Types de cartes</span>
+              </div>
+            )}
+
+            {/* Card types as reference targets */}
+            {cardTypes.map(ct => (
+              <TypeMenuItem key={ct.id} icon={ct.icon} label={ct.name}
+                active={isCurrentCardRef(ct.id)} onClick={() => changeToCardRef(ct.id)}
+                color={ct.color} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Delete */}
+      {onRemove && (
+        <div onClick={() => { onRemove(); onClose() }}
+          style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 12px', cursor: 'pointer', color: '#8a5a5a', fontSize: 12, transition: 'background 0.1s' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,80,80,0.06)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+          <Icon name="trash" size={12} />
+          <span>Supprimer</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TypeMenuItem({ icon, label, active, onClick, color }) {
+  return (
+    <div onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8, padding: '7px 11px', cursor: 'pointer', fontSize: 12,
+        color: active ? '#c8a064' : (color || '#9a8a70'),
+        background: active ? 'rgba(200,160,100,0.1)' : 'transparent',
+        transition: 'background 0.08s',
+      }}
+      onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+      onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}>
+      <span style={{ width: 18, textAlign: 'center', fontSize: 13 }}>{icon}</span>
+      <span style={{ fontFamily: "'DM Sans', sans-serif", flex: 1 }}>{label}</span>
+      {active && <Icon name="check" size={11} style={{ color: '#c8a064', flexShrink: 0 }} />}
     </div>
   )
 }
