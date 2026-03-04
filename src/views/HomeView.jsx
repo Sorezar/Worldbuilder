@@ -14,7 +14,7 @@ export default function HomeView({ world, setWorld, cards, customTypes, onOpenCa
   const saveWelcome = () => { setWorld({ ...world, welcomeText: welcomeDraft }); setEditingWelcome(false) }
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', padding: '48px 56px' }} className="anim-fadeup">
+    <div style={{ flex: 1, overflow: 'auto', padding: '48px 56px', background: 'rgba(8,4,0,0.5)', backdropFilter: 'blur(40px) saturate(1.4)', WebkitBackdropFilter: 'blur(40px) saturate(1.4)', borderRadius: 16, border: '1px solid rgba(255,200,120,0.09)' }} className="anim-fadeup">
       {/* Title */}
       <h1 style={{ fontFamily: "'Lora', serif", fontSize: 44, fontWeight: 700, color: '#f0e6d3', marginBottom: 14, lineHeight: 1.1 }}>
         Bienvenue
@@ -89,9 +89,9 @@ export default function HomeView({ world, setWorld, cards, customTypes, onOpenCa
             { label: 'Paramètres', icon: 'settings', action: () => setShowSettings(true) },
           ].map(item => (
             <button key={item.label} onClick={item.action}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', marginBottom: 6, borderRadius: 8, border: 'none', background: 'rgba(0,0,0,0.3)', color: '#c8b89a', fontSize: 13, cursor: 'pointer', textAlign: 'left', transition: 'all 0.12s' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#f0e6d3' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.3)'; e.currentTarget.style.color = '#c8b89a' }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', marginBottom: 7, borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.25)', color: '#c8b89a', fontSize: 13, cursor: 'pointer', textAlign: 'left', transition: 'all 0.12s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#f0e6d3'; e.currentTarget.style.borderColor = 'rgba(255,200,120,0.15)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.25)'; e.currentTarget.style.color = '#c8b89a'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' }}
             >
               <Icon name={item.icon} size={15} />{item.label}
             </button>
@@ -109,14 +109,14 @@ function RecentCard({ card, customTypes, onClick }) {
   const allTypes = [...BUILTIN_TYPES, ...(customTypes || [])]
   const type = allTypes.find(t => t.id === card.typeId) || { icon: '📄', color: '#9a8a70', name: 'Document' }
   return (
-    <div onClick={onClick} style={{ width: 148, borderRadius: 12, overflow: 'hidden', border: `1px solid ${type.color || '#333'}20`, background: 'rgba(0,0,0,0.28)', cursor: 'pointer', transition: 'transform 0.15s, border-color 0.15s' }}
+    <div onClick={onClick} style={{ width: 152, borderRadius: 14, overflow: 'hidden', border: `1px solid ${type.color || '#333'}20`, background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', cursor: 'pointer', transition: 'transform 0.15s, border-color 0.15s' }}
       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = (type.color || '#888') + '50' }}
       onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = (type.color || '#333') + '20' }}
     >
-      <div style={{ height: 68, background: card.image ? `url(${card.image}) center/cover` : (type.color || '#5a5040') + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>
+      <div style={{ height: 72, background: card.image ? `url(${card.image}) center/cover` : (type.color || '#5a5040') + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>
         {!card.image && (type.icon || '📄')}
       </div>
-      <div style={{ padding: '8px 10px' }}>
+      <div style={{ padding: '9px 11px' }}>
         <div style={{ fontSize: 13, fontWeight: 500, color: '#f0e6d3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.name}</div>
         <div style={{ fontSize: 10, color: '#4a3a28', marginTop: 3 }}>
           {card.updatedAt ? new Date(card.updatedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : 'À l\'instant'}
@@ -139,7 +139,7 @@ function MiniGraph({ cards, customTypes, onOpenCard }) {
   return (
     <div>
       <h3 style={{ fontFamily: "'Lora', serif", fontSize: 15, color: '#7a6a58', marginBottom: 12, fontWeight: 400 }}>Vue d'ensemble</h3>
-      <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, overflow: 'hidden' }}>
         <svg width="100%" height={280} viewBox="0 0 600 280">
           {nodes.map(n => (n.props ? Object.values(n.props) : []).flat().map(refId => {
             const target = nodeMap[refId]

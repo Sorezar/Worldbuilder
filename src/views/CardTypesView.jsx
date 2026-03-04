@@ -224,7 +224,7 @@ export function DropdownPropPicker({ allTypes, onAdd, onCancel }) {
   }
 
   return (
-    <div ref={ref} className="anim-slidedown" style={{ background:'rgba(8,4,0,0.97)', border:'1px solid rgba(200,160,100,0.18)', borderRadius:10, overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.7)', marginBottom:6 }}>
+    <div ref={ref} className="anim-slidedown" style={{ background:'rgba(8,4,0,0.85)', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid rgba(200,160,100,0.14)', borderRadius:14, overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.7)', marginBottom:6 }}>
       <div style={{ padding:'8px 10px', borderBottom:'1px solid rgba(255,255,255,0.05)', display:'flex', alignItems:'center', gap:6 }}>
         <input autoFocus value={name} onChange={e=>setName(e.target.value)}
           onKeyDown={e => { if(e.key==='Escape') onCancel() }}

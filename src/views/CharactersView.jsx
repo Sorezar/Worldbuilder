@@ -77,7 +77,7 @@ export default function CharactersView({ cards, customTypes, onOpenCard, onCreat
   }, [filtered, filterType])
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', padding: '28px 36px' }} className="anim-fadeup">
+    <div style={{ flex: 1, overflow: 'auto', padding: '28px 36px', background: 'rgba(8,4,0,0.5)', backdropFilter: 'blur(40px) saturate(1.4)', WebkitBackdropFilter: 'blur(40px) saturate(1.4)', borderRadius: 16, border: '1px solid rgba(255,200,120,0.09)' }} className="anim-fadeup">
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
         <h2 style={{ fontFamily: "'Lora', serif", fontSize: 22, color: '#f0e6d3', fontWeight: 500 }}>
@@ -94,7 +94,7 @@ export default function CharactersView({ cards, customTypes, onOpenCard, onCreat
         <div style={{ position: 'relative' }}>
           <Icon name="search" size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#4a3a28' }} />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher…"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 8, padding: '6px 10px 6px 26px', color: '#c8b89a', fontSize: 12, outline: 'none', width: 180 }}
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, padding: '7px 10px 7px 26px', color: '#c8b89a', fontSize: 12, outline: 'none', width: 180 }}
           />
         </div>
 
@@ -108,7 +108,7 @@ export default function CharactersView({ cards, customTypes, onOpenCard, onCreat
 
         {/* Sort */}
         <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-          style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 8, padding: '6px 10px', color: '#9a8a70', fontSize: 12, outline: 'none', cursor: 'pointer' }}>
+          style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, padding: '7px 10px', color: '#9a8a70', fontSize: 12, outline: 'none', cursor: 'pointer' }}>
           <option value="name">Alphabétique</option>
           <option value="recent">Plus récents</option>
           <option value="oldest">Plus anciens</option>
@@ -149,7 +149,7 @@ export default function CharactersView({ cards, customTypes, onOpenCard, onCreat
 function FilterChip({ label, active, onClick, color }) {
   return (
     <span onClick={onClick} style={{
-      padding: '4px 11px', borderRadius: 6, cursor: 'pointer', fontSize: 12,
+      padding: '5px 12px', borderRadius: 10, cursor: 'pointer', fontSize: 12,
       background: active ? (color ? color + '20' : 'rgba(200,160,100,0.15)') : 'rgba(255,255,255,0.04)',
       color: active ? (color || '#c8a064') : '#7a6a58',
       border: `1px solid ${active ? (color ? color + '35' : 'rgba(200,160,100,0.25)') : 'transparent'}`,

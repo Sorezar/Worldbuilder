@@ -51,14 +51,15 @@ export default function DraggableWindow({
 
   const style = maximized
     ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', borderRadius: 0 }
-    : { position: 'fixed', top: pos.y, left: pos.x, width: size.w, height: size.h, borderRadius: 14 }
+    : { position: 'fixed', top: pos.y, left: pos.x, width: size.w, height: size.h, borderRadius: 18 }
 
   return (
     <div ref={windowRef} style={{
       ...style, zIndex: 700,
-      background: 'rgba(8, 5, 1, 0.72)',
-      backdropFilter: 'blur(32px) saturate(1.5)',
-      border: '1px solid rgba(255, 200, 120, 0.18)',
+      background: 'rgba(8, 5, 1, 0.65)',
+      backdropFilter: 'blur(40px) saturate(1.6)',
+      WebkitBackdropFilter: 'blur(40px) saturate(1.6)',
+      border: '1px solid rgba(255, 200, 120, 0.14)',
       boxShadow: '0 0 0 1px rgba(255,200,100,0.04), 0 24px 80px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,220,160,0.07)',
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
     }}>

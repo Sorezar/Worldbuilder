@@ -29,9 +29,9 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Header */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 7, padding: '0 13px',
-        height: 40, borderBottom: '1px solid rgba(255,200,120,0.08)', flexShrink: 0,
-        background: 'rgba(255,200,100,0.02)',
+        display: 'flex', alignItems: 'center', gap: 7, padding: '0 15px',
+        height: 42, borderBottom: '1px solid rgba(255,200,120,0.08)', flexShrink: 0,
+        background: 'rgba(255,200,100,0.02)', borderRadius: '16px 16px 0 0',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: 1, overflow: 'hidden', minWidth: 0 }}>
           {ancestors.map(a => (
@@ -78,14 +78,14 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
           <div style={{ flexShrink: 0 }}>
             <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
             {card.image ? (
-              <div style={{ width: 80, height: 80, borderRadius: 9, overflow: 'hidden', border: '1px solid rgba(255,200,120,0.15)', position: 'relative', cursor: 'pointer' }} onClick={() => fileRef.current?.click()}>
+              <div style={{ width: 80, height: 80, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,200,120,0.15)', position: 'relative', cursor: 'pointer' }} onClick={() => fileRef.current?.click()}>
                 <img src={card.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <button onClick={e => { e.stopPropagation(); upd({ image: '' }) }}
                   style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: 3, width: 15, height: 15, cursor: 'pointer', color: '#ccc', fontSize: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
               </div>
             ) : (
               <div onClick={() => fileRef.current?.click()}
-                style={{ width: 80, height: 80, borderRadius: 9, border: '1px dashed rgba(255,200,120,0.12)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer', color: '#3a2a18', fontSize: 10 }}
+                style={{ width: 80, height: 80, borderRadius: 12, border: '1px dashed rgba(255,200,120,0.12)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer', color: '#3a2a18', fontSize: 10 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(200,160,100,0.35)'; e.currentTarget.style.color = '#c8a064' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,200,120,0.12)'; e.currentTarget.style.color = '#3a2a18' }}
               >
@@ -154,7 +154,7 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
 // ─── PropGroup ────────────────────────────────────────────────
 function PropGroup({ children }) {
   return (
-    <div style={{ background: 'rgba(255,255,255,0.025)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', marginBottom: 14, overflow: 'visible' }}>
+    <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 14, border: '1px solid rgba(255,255,255,0.07)', marginBottom: 14, overflow: 'visible' }}>
       {children}
     </div>
   )
@@ -278,8 +278,8 @@ function CardRefPicker({ eligibleCards, targetTypeIds, customTypes, allTypes, on
   return (
     <div ref={ref} style={{
       position: 'absolute', top: '100%', left: 0, zIndex: 600,
-      background: 'rgba(10,6,1,0.95)', backdropFilter: 'blur(24px)',
-      border: '1px solid rgba(255,200,120,0.18)', borderRadius: 10,
+      background: 'rgba(10,6,1,0.85)', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
+      border: '1px solid rgba(255,200,120,0.14)', borderRadius: 14,
       width: 240, boxShadow: '0 8px 32px rgba(0,0,0,0.8)', overflow: 'hidden', marginTop: 3,
     }}>
       <div style={{ padding: '7px 9px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -369,7 +369,7 @@ function DateField({ value, onChange, calendars }) {
         {display()}
       </button>
       {open && (
-        <div style={{ position:'absolute', top:'100%', left:0, zIndex:200, marginTop:4, background:'rgba(8,4,0,0.97)', border:'1px solid rgba(200,160,100,0.18)', borderRadius:10, padding:14, minWidth:260, boxShadow:'0 8px 32px rgba(0,0,0,0.7)' }}>
+        <div style={{ position:'absolute', top:'100%', left:0, zIndex:200, marginTop:4, background:'rgba(8,4,0,0.85)', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid rgba(200,160,100,0.14)', borderRadius:14, padding:14, minWidth:260, boxShadow:'0 8px 32px rgba(0,0,0,0.7)' }}>
           <div style={{ marginBottom:10 }}>
             <div style={{ fontSize:10, color:'#3a2a18', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Calendrier</div>
             <select value={mode} onChange={e => { setMode(e.target.value); setYear('1'); setMonth('1'); setDay('1') }}

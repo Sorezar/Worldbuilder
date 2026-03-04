@@ -117,13 +117,13 @@ export default function GraphView({ cards, customTypes, onOpenCard }) {
   })
 
   return (
-    <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+    <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', background: 'rgba(8,4,0,0.5)', backdropFilter: 'blur(40px) saturate(1.4)', WebkitBackdropFilter: 'blur(40px) saturate(1.4)', borderRadius: 16, border: '1px solid rgba(255,200,120,0.09)' }}>
       {/* Controls */}
       <div style={{ position: 'absolute', top: 14, left: 14, zIndex: 10, display: 'flex', gap: 8 }}>
         <div style={{ position: 'relative' }}>
           <Icon name="search" size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#4a3a28' }} />
           <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Filtrer…"
-            style={{ background: 'rgba(10,6,1,0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '6px 10px 6px 26px', color: '#c8b89a', fontSize: 12, outline: 'none', width: 150 }}
+            style={{ background: 'rgba(10,6,1,0.8)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '7px 10px 7px 26px', color: '#c8b89a', fontSize: 12, outline: 'none', width: 150 }}
           />
         </div>
         <Btn variant="dark" size="sm" onClick={() => { setPan({ x: 0, y: 0 }); setZoom(1) }}>
@@ -228,7 +228,7 @@ export default function GraphView({ cards, customTypes, onOpenCard }) {
 function TypeLegend({ customTypes }) {
   const all = [...BUILTIN_TYPES.filter(t => !t.virtual && !t.parentId), ...(customTypes || []).filter(t => !t.parentId)]
   return (
-    <div style={{ position: 'absolute', bottom: 16, left: 14, zIndex: 10, background: 'rgba(10,6,1,0.82)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 14px' }}>
+    <div style={{ position: 'absolute', bottom: 16, left: 14, zIndex: 10, background: 'rgba(10,6,1,0.7)', backdropFilter: 'blur(30px) saturate(1.4)', WebkitBackdropFilter: 'blur(30px) saturate(1.4)', border: '1px solid rgba(255,200,120,0.1)', borderRadius: 14, padding: '11px 15px' }}>
       <div style={{ fontSize: 10, color: '#4a3a28', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7 }}>Types</div>
       {all.map(t => (
         <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, color: '#7a6a58', marginBottom: 3 }}>

@@ -49,17 +49,17 @@ export function Icon({ name, size = 16, style, className, onClick }) {
 export function Btn({ children, onClick, variant = 'ghost', size = 'md', style, disabled, title, type = 'button' }) {
   const base = {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-    border: 'none', borderRadius: 8, cursor: disabled ? 'not-allowed' : 'pointer',
+    border: 'none', borderRadius: 10, cursor: disabled ? 'not-allowed' : 'pointer',
     fontWeight: 500, transition: 'all 0.12s', opacity: disabled ? 0.4 : 1,
     whiteSpace: 'nowrap',
   }
   const sizes = {
     xs: { padding: '3px 8px', fontSize: 11 },
     sm: { padding: '5px 10px', fontSize: 12 },
-    md: { padding: '7px 13px', fontSize: 13 },
+    md: { padding: '7px 14px', fontSize: 13 },
     lg: { padding: '10px 18px', fontSize: 14 },
-    icon: { padding: 6, width: 28, height: 28, borderRadius: 7 },
-    icon_sm: { padding: 4, width: 22, height: 22, borderRadius: 5 },
+    icon: { padding: 6, width: 30, height: 30, borderRadius: 10 },
+    icon_sm: { padding: 4, width: 24, height: 24, borderRadius: 7 },
   }
   const variants = {
     ghost: { background: 'transparent', color: '#7a6a58' },
@@ -107,7 +107,7 @@ export function Input({ value, onChange, placeholder, style, autoFocus, onKeyDow
       placeholder={placeholder} autoFocus={autoFocus} onKeyDown={onKeyDown}
       style={{
         background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
-        borderRadius: 8, padding: '7px 11px', color: '#e2d9c8', fontSize: 13,
+        borderRadius: 10, padding: '8px 12px', color: '#e2d9c8', fontSize: 13,
         outline: 'none', width: '100%', transition: 'border-color 0.12s', ...style,
       }}
       onFocus={e => e.target.style.borderColor = 'rgba(200,160,100,0.45)'}
@@ -123,7 +123,7 @@ export function Textarea({ value, onChange, placeholder, rows = 4, style }) {
       placeholder={placeholder} rows={rows}
       style={{
         background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
-        borderRadius: 8, padding: '8px 11px', color: '#e2d9c8', fontSize: 13,
+        borderRadius: 10, padding: '9px 12px', color: '#e2d9c8', fontSize: 13,
         lineHeight: 1.75, outline: 'none', width: '100%', resize: 'vertical',
         transition: 'border-color 0.12s', fontFamily: "'DM Sans', sans-serif", ...style,
       }}
@@ -149,7 +149,7 @@ export function Dropdown({ value, options, onChange, placeholder = 'Sélectionne
     <div ref={ref} style={{ position: 'relative', ...style }}>
       <div onClick={() => setOpen(!open)} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-        padding: '6px 11px', borderRadius: 8, cursor: 'pointer',
+        padding: '7px 12px', borderRadius: 10, cursor: 'pointer',
         background: 'rgba(255,255,255,0.05)',
         border: `1px solid ${open ? 'rgba(200,160,100,0.4)' : 'rgba(255,255,255,0.09)'}`,
         fontSize: 13, color: selected ? '#e2d9c8' : '#4a4030',
@@ -160,8 +160,8 @@ export function Dropdown({ value, options, onChange, placeholder = 'Sélectionne
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 600,
-          background: '#1a1208', border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
+          background: 'rgba(14,10,4,0.9)', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)', border: '1px solid rgba(255,200,120,0.12)',
+          borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
           maxHeight: 220, overflowY: 'auto',
         }}>
           {options.map((opt, i) => {
@@ -202,13 +202,13 @@ export function Modal({ title, children, onClose, width = 520, noPad = false }) 
     <div className="anim-fadein" onClick={e => { if (e.target === e.currentTarget) onClose() }}
       style={{
         position: 'fixed', inset: 0, zIndex: 800,
-        background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)',
+        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
       <div className="anim-scalein" style={{
         width: '90%', maxWidth: width, maxHeight: '90vh',
-        background: '#1a1208', border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: 14, boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
+        background: 'rgba(14,10,4,0.85)', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)', border: '1px solid rgba(255,200,120,0.12)',
+        borderRadius: 18, boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
       }}>
         {title && (

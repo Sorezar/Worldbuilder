@@ -94,11 +94,12 @@ export default function Sidebar({
 
   return (
     <div style={{
-      width:232, flexShrink:0, display:'flex', flexDirection:'column',
-      background:'rgba(5,2,0,0.52)',
-      backdropFilter:'blur(24px) saturate(1.5)',
-      WebkitBackdropFilter:'blur(24px) saturate(1.5)',
-      borderRight:'1px solid rgba(255,200,120,0.07)',
+      width:240, flexShrink:0, display:'flex', flexDirection:'column',
+      background:'rgba(5,2,0,0.5)',
+      backdropFilter:'blur(40px) saturate(1.6)',
+      WebkitBackdropFilter:'blur(40px) saturate(1.6)',
+      borderRadius:16,
+      border:'1px solid rgba(255,200,120,0.09)',
     }}>
 
       {/* Header with search */}
@@ -234,7 +235,7 @@ function NewCardMenu({ allTypes, onSelect, onClose }) {
   }, [onClose])
   const rootTypes = allTypes.filter(t=>!t.parentId)
   return (
-    <div ref={ref} style={{ position:'absolute', bottom:52, left:8, right:8, zIndex:300, background:'rgba(10,6,1,0.96)', backdropFilter:'blur(20px)', border:'1px solid rgba(255,200,120,0.14)', borderRadius:12, overflow:'hidden', boxShadow:'0 -8px 40px rgba(0,0,0,0.8)' }}>
+    <div ref={ref} style={{ position:'absolute', bottom:52, left:8, right:8, zIndex:300, background:'rgba(10,6,1,0.85)', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid rgba(255,200,120,0.14)', borderRadius:14, overflow:'hidden', boxShadow:'0 -8px 40px rgba(0,0,0,0.8)' }}>
       <div style={{ padding:'9px 14px', borderBottom:'1px solid rgba(255,255,255,0.05)', fontSize:11, color:'#5a4a38', textTransform:'uppercase', letterSpacing:'0.07em' }}>
         Nouveau document
       </div>

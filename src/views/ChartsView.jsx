@@ -71,7 +71,7 @@ export default function ChartsView({ cards, customTypes }) {
   }, [cards, customTypes, selectedCardIds, activeStats, cardsWithStats])
 
   return (
-    <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
+    <div style={{ flex:1, display:'flex', overflow:'hidden', background:'rgba(8,4,0,0.5)', backdropFilter:'blur(40px) saturate(1.4)', WebkitBackdropFilter:'blur(40px) saturate(1.4)', borderRadius:16, border:'1px solid rgba(255,200,120,0.09)' }}>
       {/* Left */}
       <div style={{ width:240, flexShrink:0, borderRight:'1px solid rgba(255,255,255,0.07)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
         <div style={{ padding:'12px 12px 8px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>

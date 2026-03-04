@@ -166,7 +166,7 @@ export default function TimelineView({ cards, customTypes, calendars, onOpenCard
   }
 
   return (
-    <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
+    <div style={{ flex:1, display:'flex', overflow:'hidden', background:'rgba(8,4,0,0.5)', backdropFilter:'blur(40px) saturate(1.4)', WebkitBackdropFilter:'blur(40px) saturate(1.4)', borderRadius:16, border:'1px solid rgba(255,200,120,0.09)' }}>
       {/* Left panel */}
       <div style={{ width:210, flexShrink:0, borderRight:'1px solid rgba(255,255,255,0.07)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
         <div style={{ padding:'12px 14px 8px', borderBottom:'1px solid rgba(255,255,255,0.06)', fontSize:12, color:'#7a6a58', fontFamily:"'Lora',serif" }}>Personnages</div>
@@ -251,7 +251,7 @@ export default function TimelineView({ cards, customTypes, calendars, onOpenCard
                   <div style={{ position:'absolute', left:-28, top:14, width:14, height:14, borderRadius:'50%', background:hl?color:entry.isEvent?color+'40':'rgba(255,255,255,0.08)', border:`2px solid ${hl?color:entry.isEvent?color:'rgba(255,255,255,0.12)'}`, transition:'all 0.2s', zIndex:1, boxShadow:hl?`0 0 10px ${color}60`:'none' }} />
 
                   <div onClick={() => onOpenCard(entry.cardId)}
-                    style={{ background:hl?`${color}12`:entry.isEvent?`${color}08`:'rgba(0,0,0,0.18)', border:`1px solid ${hl?color+'40':entry.isEvent?color+'20':'rgba(255,255,255,0.06)'}`, borderRadius:10, padding:'11px 14px', cursor:'pointer', transition:'all 0.15s', marginLeft:8 }}
+                    style={{ background:hl?`${color}12`:entry.isEvent?`${color}08`:'rgba(0,0,0,0.18)', border:`1px solid ${hl?color+'40':entry.isEvent?color+'20':'rgba(255,255,255,0.06)'}`, borderRadius:14, padding:'12px 16px', cursor:'pointer', transition:'all 0.15s', marginLeft:8 }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor=color+'50'; e.currentTarget.style.background=color+'14' }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor=hl?color+'40':entry.isEvent?color+'20':'rgba(255,255,255,0.06)'; e.currentTarget.style.background=hl?`${color}12`:entry.isEvent?`${color}08`:'rgba(0,0,0,0.18)' }}>
                     <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
