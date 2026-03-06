@@ -77,10 +77,10 @@ export default function CharactersView({ cards, customTypes, onOpenCard, onCreat
   }, [filtered, filterType])
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', padding: '28px 36px', background: 'rgba(8,4,0,0.5)', backdropFilter: 'blur(40px) saturate(1.4)', WebkitBackdropFilter: 'blur(40px) saturate(1.4)', borderRadius: 16, border: '1px solid rgba(255,200,120,0.09)' }} className="anim-fadeup">
+    <div style={{ flex: 1, overflow: 'auto', padding: '28px 36px', background: 'var(--bg-base-50,rgba(8,4,0,0.5))', backdropFilter: 'blur(40px) saturate(1.4)', WebkitBackdropFilter: 'blur(40px) saturate(1.4)', borderRadius: 16, border: '1px solid var(--border-09,rgba(255,200,120,0.09))' }} className="anim-fadeup">
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
-        <h2 style={{ fontFamily: "'Lora', serif", fontSize: 22, color: '#f0e6d3', fontWeight: 500 }}>
+        <h2 style={{ fontFamily: "var(--font)", fontSize: 22, color: 'var(--text-primary,#f0e6d3)', fontWeight: 500 }}>
           Documents ({cards.length})
         </h2>
         <Btn variant="primary" onClick={() => onCreateCard('character')}>
@@ -92,9 +92,9 @@ export default function CharactersView({ cards, customTypes, onOpenCard, onCreat
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         {/* Search */}
         <div style={{ position: 'relative' }}>
-          <Icon name="search" size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#4a3a28' }} />
+          <Icon name="search" size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark,#4a3a28)' }} />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher…"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, padding: '7px 10px 7px 26px', color: '#c8b89a', fontSize: 12, outline: 'none', width: 180 }}
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, padding: '7px 10px 7px 26px', color: 'var(--text-secondary,#c8b89a)', fontSize: 12, outline: 'none', width: 180 }}
           />
         </div>
 
@@ -108,7 +108,7 @@ export default function CharactersView({ cards, customTypes, onOpenCard, onCreat
 
         {/* Sort */}
         <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-          style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, padding: '7px 10px', color: '#9a8a70', fontSize: 12, outline: 'none', cursor: 'pointer' }}>
+          style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, padding: '7px 10px', color: 'var(--text-muted,#9a8a70)', fontSize: 12, outline: 'none', cursor: 'pointer' }}>
           <option value="name">Alphabétique</option>
           <option value="recent">Plus récents</option>
           <option value="oldest">Plus anciens</option>
@@ -118,7 +118,7 @@ export default function CharactersView({ cards, customTypes, onOpenCard, onCreat
 
       {/* Results */}
       {filtered.length === 0 ? (
-        <div style={{ textAlign: 'center', paddingTop: 60, color: '#3a2a18' }}>
+        <div style={{ textAlign: 'center', paddingTop: 60, color: 'var(--text-darker,#3a2a18)' }}>
           <p style={{ fontSize: 15 }}>{search || filterType !== 'all' ? 'Aucun résultat' : 'Aucun document'}</p>
         </div>
       ) : filterType !== 'all' ? (
@@ -132,8 +132,8 @@ export default function CharactersView({ cards, customTypes, onOpenCard, onCreat
             <div key={typeId} style={{ marginBottom: 28 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <span style={{ fontSize: 14 }}>{t.icon}</span>
-                <span style={{ fontFamily: "'Lora', serif", fontSize: 15, color: '#c8b89a', fontWeight: 500 }}>{t.name}</span>
-                <span style={{ fontSize: 11, color: '#4a3a28' }}>({typeCards.length})</span>
+                <span style={{ fontFamily: "var(--font)", fontSize: 15, color: 'var(--text-secondary,#c8b89a)', fontWeight: 500 }}>{t.name}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-dark,#4a3a28)' }}>({typeCards.length})</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {typeCards.map(card => <CardRow key={card.id} card={card} altForms={getAltForms(card)} customTypes={customTypes} onOpenCard={onOpenCard} cards={cards} />)}
@@ -150,9 +150,9 @@ function FilterChip({ label, active, onClick, color }) {
   return (
     <span onClick={onClick} style={{
       padding: '5px 12px', borderRadius: 10, cursor: 'pointer', fontSize: 12,
-      background: active ? (color ? color + '20' : 'rgba(200,160,100,0.15)') : 'rgba(255,255,255,0.04)',
-      color: active ? (color || '#c8a064') : '#7a6a58',
-      border: `1px solid ${active ? (color ? color + '35' : 'rgba(200,160,100,0.25)') : 'transparent'}`,
+      background: active ? (color ? color + '20' : 'var(--accent-15,rgba(200,160,100,0.15))') : 'rgba(255,255,255,0.04)',
+      color: active ? (color || 'var(--accent,#c8a064)') : 'var(--text-muted,#7a6a58)',
+      border: `1px solid ${active ? (color ? color + '35' : 'var(--accent-22,rgba(200,160,100,0.25))') : 'transparent'}`,
       transition: 'all 0.1s',
     }}>
       {label}
@@ -194,8 +194,8 @@ function CardRow({ card, altForms, customTypes, onOpenCard, cards }) {
 
         {/* Name + text */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "'Lora', serif", fontSize: 14, color: '#f0e6d3', marginBottom: 2 }}>{card.name}</div>
-          {card.text && <div style={{ fontSize: 11, color: '#5a4a38', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.text}</div>}
+          <div style={{ fontFamily: "var(--font)", fontSize: 14, color: 'var(--text-primary,#f0e6d3)', marginBottom: 2 }}>{card.name}</div>
+          {card.text && <div style={{ fontSize: 11, color: 'var(--text-dim,#5a4a38)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.text}</div>}
         </div>
 
         {/* Relation pills */}
@@ -209,7 +209,7 @@ function CardRow({ card, altForms, customTypes, onOpenCard, cards }) {
         {/* Alt forms toggle */}
         {hasAltForms && (
           <button onClick={e => { e.stopPropagation(); setExpanded(!expanded) }}
-            style={{ background: 'none', border: 'none', color: '#5a4a38', cursor: 'pointer', padding: '2px 6px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+            style={{ background: 'none', border: 'none', color: 'var(--text-dim,#5a4a38)', cursor: 'pointer', padding: '2px 6px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
             <Icon name={expanded ? 'chevron_down' : 'chevron_right'} size={11} />
             {altForms.length} forme{altForms.length > 1 ? 's' : ''}
           </button>
@@ -229,8 +229,8 @@ function CardRow({ card, altForms, customTypes, onOpenCard, cards }) {
           {alt.image ? <img src={alt.image} alt="" style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'cover' }} />
             : <div style={{ width: 28, height: 28, borderRadius: 6, background: t.color + '1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>{t.icon}</div>
           }
-          <span style={{ fontFamily: "'Lora', serif", fontSize: 13, color: '#c8b89a' }}>{alt.name}</span>
-          <span style={{ fontSize: 11, color: '#4a3a28', fontStyle: 'italic' }}>forme alternative</span>
+          <span style={{ fontFamily: "var(--font)", fontSize: 13, color: 'var(--text-secondary,#c8b89a)' }}>{alt.name}</span>
+          <span style={{ fontSize: 11, color: 'var(--text-dark,#4a3a28)', fontStyle: 'italic' }}>forme alternative</span>
         </div>
       ))}
     </div>

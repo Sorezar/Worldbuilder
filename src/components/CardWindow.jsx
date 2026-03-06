@@ -66,7 +66,7 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: 1, overflow: 'hidden', minWidth: 0 }}>
           {ancestors.map(a => (
             <React.Fragment key={a.id}>
-              <span style={{ fontSize: 10, color: '#3a2a18' }}>{a.icon} {a.name}</span>
+              <span style={{ fontSize: 10, color: 'var(--text-darker,#3a2a18)' }}>{a.icon} {a.name}</span>
               <Icon name="chevron_right" size={9} style={{ color: '#2a1a08', flexShrink: 0 }} />
             </React.Fragment>
           ))}
@@ -80,7 +80,7 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
           <Icon name="trash" size={11} />
         </button>
         <button onClick={onClose}
-          style={{ background: 'none', border: 'none', color: '#4a3a28', cursor: 'pointer', padding: '3px 5px', borderRadius: 4, fontSize: 11, display: 'flex', alignItems: 'center' }}
+          style={{ background: 'none', border: 'none', color: 'var(--text-dark,#4a3a28)', cursor: 'pointer', padding: '3px 5px', borderRadius: 4, fontSize: 11, display: 'flex', alignItems: 'center' }}
           onMouseEnter={e => e.currentTarget.style.color = '#c8b89a'}
           onMouseLeave={e => e.currentTarget.style.color = '#4a3a28'}
         >
@@ -96,10 +96,10 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
             <input
               value={card.name}
               onChange={e => upd({ name: e.target.value })}
-              style={{ background: 'transparent', border: 'none', color: '#f0e6d3', fontSize: 22, fontFamily: "'Lora', serif", fontWeight: 600, width: '100%', outline: 'none', marginBottom: 10, letterSpacing: '-0.01em' }}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-primary,#f0e6d3)', fontSize: 22, fontFamily: "var(--font)", fontWeight: 600, width: '100%', outline: 'none', marginBottom: 10, letterSpacing: '-0.01em' }}
             />
             {type && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', background: (type.color || '#5a5040') + '18', border: `1px solid ${type.color || '#5a5040'}28`, borderRadius: 20, fontSize: 11, color: type.color || '#9a8a70', fontFamily: "'DM Sans', sans-serif" }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', background: (type.color || '#5a5040') + '18', border: `1px solid ${type.color || '#5a5040'}28`, borderRadius: 20, fontSize: 11, color: type.color || '#9a8a70', fontFamily: "var(--font-body)" }}>
                 {type.icon} {type.name}
               </span>
             )}
@@ -115,7 +115,7 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
               </div>
             ) : (
               <div onClick={() => fileRef.current?.click()}
-                style={{ width: 80, height: 80, borderRadius: 12, border: '1px dashed rgba(255,200,120,0.12)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer', color: '#3a2a18', fontSize: 10 }}
+                style={{ width: 80, height: 80, borderRadius: 12, border: '1px dashed rgba(255,200,120,0.12)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer', color: 'var(--text-darker,#3a2a18)', fontSize: 10 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(200,160,100,0.35)'; e.currentTarget.style.color = '#c8a064' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,200,120,0.12)'; e.currentTarget.style.color = '#3a2a18' }}
               >
@@ -183,7 +183,7 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
             onCancel={() => setAddingExtraProp(false)}
           />
         ) : (
-          <button onClick={() => setAddingExtraProp(true)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 0', background: 'none', border: 'none', color: '#3a2a18', fontSize: 12, cursor: 'pointer', marginBottom: 18 }}
+          <button onClick={() => setAddingExtraProp(true)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 0', background: 'none', border: 'none', color: 'var(--text-darker,#3a2a18)', fontSize: 12, cursor: 'pointer', marginBottom: 18 }}
             onMouseEnter={e => e.currentTarget.style.color = '#c8a064'}
             onMouseLeave={e => e.currentTarget.style.color = '#3a2a18'}
           >
@@ -193,11 +193,11 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
 
         {/* Notes */}
         <div>
-          <div style={{ fontSize: 10, color: '#3a2a18', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Texte</div>
+          <div style={{ fontSize: 10, color: 'var(--text-darker,#3a2a18)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Texte</div>
           <textarea
             value={card.text || ''} onChange={e => upd({ text: e.target.value })}
             placeholder="Décrivez cet élément…" rows={5}
-            style={{ width: '100%', background: 'transparent', border: 'none', color: '#9a8a78', fontSize: 13, lineHeight: 1.85, resize: 'vertical', outline: 'none', fontFamily: "'DM Sans', sans-serif" }}
+            style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-muted,#9a8a78)', fontSize: 13, lineHeight: 1.85, resize: 'vertical', outline: 'none', fontFamily: "var(--font-body)" }}
           />
         </div>
       </div>
@@ -235,7 +235,7 @@ function PropField({ prop, value, onChange, cards, customTypes, onOpenCard, onCr
             const rt = getType(rc.typeId, customTypes)
             return (
               <span key={rc.id} onClick={() => onOpenCard(rc.id)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 7px', background: (rt?.color || '#5a5040') + '18', border: `1px solid ${rt?.color || '#5a5040'}28`, borderRadius: 5, fontSize: 12, color: '#e2d9c8', cursor: 'pointer' }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 7px', background: (rt?.color || '#5a5040') + '18', border: `1px solid ${rt?.color || '#5a5040'}28`, borderRadius: 5, fontSize: 12, color: 'var(--text-primary,#e2d9c8)', cursor: 'pointer' }}>
                 {rc.image
                   ? <img src={rc.image} alt="" style={{ width: 13, height: 13, borderRadius: 2, objectFit: 'cover' }} />
                   : <span style={{ fontSize: 10 }}>{rt?.icon || '📄'}</span>}
@@ -257,7 +257,7 @@ function PropField({ prop, value, onChange, cards, customTypes, onOpenCard, onCr
             />
           ) : (
             <span onClick={() => setAddingRef(true)}
-              style={{ fontSize: 11, color: '#3a2a18', cursor: 'pointer', padding: '2px 6px', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: 4 }}>
+              style={{ fontSize: 11, color: 'var(--text-darker,#3a2a18)', cursor: 'pointer', padding: '2px 6px', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: 4 }}>
               + Ajouter
             </span>
           )}
@@ -271,7 +271,7 @@ function PropField({ prop, value, onChange, cards, customTypes, onOpenCard, onCr
         return (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, padding: '4px 0', alignItems: 'center' }}>
             {items.map((item, i) => (
-              <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 7px', background: 'rgba(255,255,255,0.05)', borderRadius: 5, fontSize: 12, color: '#c8b89a' }}>
+              <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 7px', background: 'rgba(255,255,255,0.05)', borderRadius: 5, fontSize: 12, color: 'var(--text-secondary,#c8b89a)' }}>
                 {item}
                 <span onClick={() => onChange(items.filter((_, j) => j !== i))} style={{ opacity: 0.4, fontSize: 9, cursor: 'pointer' }}>✕</span>
               </span>
@@ -286,17 +286,17 @@ function PropField({ prop, value, onChange, cards, customTypes, onOpenCard, onCr
     if (prop.fieldType === FIELD_TYPES.DATE) {
       return <DateField value={value||''} onChange={onChange} calendars={calendars||[]} />
     }
-    return <span style={{ color: '#3a2a18', fontSize: 12 }}>—</span>
+    return <span style={{ color: 'var(--text-darker,#3a2a18)', fontSize: 12 }}>—</span>
   }
 
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', minHeight: 34, borderBottom: '1px solid rgba(255,255,255,0.04)', position: 'relative' }}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       {/* Drag handle */}
-      <div style={{ width: 16, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch', cursor: 'grab', opacity: hovered ? 0.5 : 0, transition: 'opacity 0.12s', color: '#5a4a38', fontSize: 10, letterSpacing: '1px' }}>
+      <div style={{ width: 16, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch', cursor: 'grab', opacity: hovered ? 0.5 : 0, transition: 'opacity 0.12s', color: 'var(--text-dim,#5a4a38)', fontSize: 10, letterSpacing: '1px' }}>
         <Icon name="drag" size={10} />
       </div>
-      <div style={{ width: 130, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '7px 4px 7px 0', color: '#5a4a38', fontSize: 12, position: 'relative' }}>
+      <div style={{ width: 130, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '7px 4px 7px 0', color: 'var(--text-dim,#5a4a38)', fontSize: 12, position: 'relative' }}>
         <span style={{ flex: 1, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
           onClick={() => { if (onRename || onRemoveProp) setShowEditor(true) }}>
           {displayName || prop.name}
@@ -418,7 +418,7 @@ function PropEditorPopup({ prop, displayName, onRename, onRemove, onEditProp, is
         <input autoFocus value={name} onChange={e => setName(e.target.value)}
           onBlur={commitName}
           onKeyDown={e => { if (e.key === 'Enter') { commitName(); onClose() } if (e.key === 'Escape') onClose() }}
-          style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 8px', color: '#e2d9c8', fontSize: 13, outline: 'none', fontFamily: "'DM Sans', sans-serif" }}
+          style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 8px', color: 'var(--text-primary,#e2d9c8)', fontSize: 13, outline: 'none', fontFamily: "var(--font-body)" }}
         />
       </div>
 
@@ -427,7 +427,7 @@ function PropEditorPopup({ prop, displayName, onRename, onRemove, onEditProp, is
         <div style={{ padding: '8px 10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           <input value={emojiSearch} onChange={e => setEmojiSearch(e.target.value)}
             placeholder="Rechercher des icônes…"
-            style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 8px', color: '#c8b89a', fontSize: 11, outline: 'none', marginBottom: 6, boxSizing: 'border-box' }}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 8px', color: 'var(--text-secondary,#c8b89a)', fontSize: 11, outline: 'none', marginBottom: 6, boxSizing: 'border-box' }}
           />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 2, maxHeight: 140, overflowY: 'auto' }}>
             {filteredEmojis.map((em, i) => (
@@ -448,10 +448,10 @@ function PropEditorPopup({ prop, displayName, onRename, onRemove, onEditProp, is
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'background 0.1s' }}
           onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-          <span style={{ fontSize: 12, color: '#5a4a38' }}>Type</span>
+          <span style={{ fontSize: 12, color: 'var(--text-dim,#5a4a38)' }}>Type</span>
           <span style={{ fontSize: 12, color: '#8a7a68', display: 'flex', alignItems: 'center', gap: 4 }}>
             {getCurrentTypeLabel()}
-            <Icon name="chevron_right" size={9} style={{ color: '#4a3a28' }} />
+            <Icon name="chevron_right" size={9} style={{ color: 'var(--text-dark,#4a3a28)' }} />
           </span>
         </div>
 
@@ -472,7 +472,7 @@ function PropEditorPopup({ prop, displayName, onRename, onRemove, onEditProp, is
             {/* Separator */}
             {cardTypes.length > 0 && (
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '2px 0', padding: '4px 11px 2px' }}>
-                <span style={{ fontSize: 9, color: '#3a2a18', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Types de cartes</span>
+                <span style={{ fontSize: 9, color: 'var(--text-darker,#3a2a18)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Types de cartes</span>
               </div>
             )}
 
@@ -512,8 +512,8 @@ function TypeMenuItem({ icon, label, active, onClick, color }) {
       onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
       onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}>
       <span style={{ width: 18, textAlign: 'center', fontSize: 13 }}>{icon}</span>
-      <span style={{ fontFamily: "'DM Sans', sans-serif", flex: 1 }}>{label}</span>
-      {active && <Icon name="check" size={11} style={{ color: '#c8a064', flexShrink: 0 }} />}
+      <span style={{ fontFamily: "var(--font-body)", flex: 1 }}>{label}</span>
+      {active && <Icon name="check" size={11} style={{ color: 'var(--accent,#c8a064)', flexShrink: 0 }} />}
     </div>
   )
 }
@@ -553,18 +553,18 @@ function CardRefPicker({ eligibleCards, targetTypeIds, customTypes, allTypes, on
       <div style={{ padding: '7px 9px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Rechercher…"
-          style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 9px', color: '#e2d9c8', fontSize: 12, outline: 'none' }}
+          style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 9px', color: 'var(--text-primary,#e2d9c8)', fontSize: 12, outline: 'none' }}
         />
       </div>
       <div style={{ maxHeight: 200, overflowY: 'auto' }}>
         {filtered.length === 0 && !searchTrim && (
-          <div style={{ padding: '10px 14px', color: '#3a2a18', fontSize: 12 }}>Aucune carte disponible</div>
+          <div style={{ padding: '10px 14px', color: 'var(--text-darker,#3a2a18)', fontSize: 12 }}>Aucune carte disponible</div>
         )}
         {filtered.map(c => {
           const t = getType(c.typeId, customTypes)
           return (
             <div key={c.id} onClick={() => onSelect(c.id)}
-              style={{ padding: '7px 13px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: '#c8b89a' }}
+              style={{ padding: '7px 13px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'var(--text-secondary,#c8b89a)' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
@@ -578,7 +578,7 @@ function CardRefPicker({ eligibleCards, targetTypeIds, customTypes, allTypes, on
       {/* Quick create */}
       {quickCreateTypes.length > 0 && (
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '7px 9px' }}>
-          <div style={{ fontSize: 10, color: '#3a2a18', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Créer</div>
+          <div style={{ fontSize: 10, color: 'var(--text-darker,#3a2a18)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Créer</div>
           {quickCreateTypes.map(t => (
             <button key={t.id}
               onClick={() => handleQuickCreate(t.id)}
@@ -671,7 +671,7 @@ function DateField({ value, onChange, calendars }) {
                 </div>
               </div>
               <div style={{ display:'flex', gap:8 }}>
-                <button onClick={applyCalDate} style={{ flex:1, background:'rgba(200,160,100,0.12)', border:'1px solid rgba(200,160,100,0.3)', borderRadius:6, padding:'6px', color:'#c8a064', fontSize:12, cursor:'pointer' }}>Valider</button>
+                <button onClick={applyCalDate} style={{ flex:1, background:'rgba(200,160,100,0.12)', border:'1px solid rgba(200,160,100,0.3)', borderRadius:6, padding:'6px', color:'var(--accent,#c8a064)', fontSize:12, cursor:'pointer' }}>Valider</button>
                 <button onClick={() => setOpen(false)} style={{ background:'none', border:'none', color:'#4a3a28', cursor:'pointer', fontSize:11 }}>Annuler</button>
               </div>
             </>
@@ -692,11 +692,11 @@ function InlineAddText({ onAdd, placeholder }) {
     <input autoFocus value={val} onChange={e => setVal(e.target.value)}
       onKeyDown={e => { if (e.key === 'Enter' && val.trim()) { onAdd(val.trim()); setVal(''); setEditing(false) } if (e.key === 'Escape') { setVal(''); setEditing(false) } }}
       onBlur={() => { if (val.trim()) onAdd(val.trim()); setVal(''); setEditing(false) }}
-      style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(200,160,100,0.3)', borderRadius: 5, padding: '2px 7px', color: '#e2d9c8', fontSize: 12, outline: 'none', width: 80 }}
+      style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(200,160,100,0.3)', borderRadius: 5, padding: '2px 7px', color: 'var(--text-primary,#e2d9c8)', fontSize: 12, outline: 'none', width: 80 }}
     />
   )
   return (
-    <span onClick={() => setEditing(true)} style={{ fontSize: 11, color: '#3a2a18', cursor: 'pointer', padding: '2px 6px', border: '1px dashed rgba(255,255,255,0.07)', borderRadius: 4 }}>
+    <span onClick={() => setEditing(true)} style={{ fontSize: 11, color: 'var(--text-darker,#3a2a18)', cursor: 'pointer', padding: '2px 6px', border: '1px dashed rgba(255,255,255,0.07)', borderRadius: 4 }}>
       {placeholder}
     </span>
   )

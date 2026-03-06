@@ -29,6 +29,19 @@ const PATHS = {
   tag: 'M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z M7 7h.01',
   refresh: 'M1 4v6h6 M23 20v-6h-6 M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15',
   card: 'M5 2h14a2 2 0 012 2v16a2 2 0 01-2 2H5a2 2 0 01-2-2V4a2 2 0 012-2z M8 7v0 M16 17v0 M12 12v0',
+  cursor: 'M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z M13 13l6 6',
+  polygon: 'M12 2l9 7-3.5 10h-11L3 9z',
+  text_icon: 'M4 7V4h16v3 M9 20h6 M12 4v16',
+  move: 'M5 9l-3 3 3 3 M9 5l3-3 3 3 M15 19l3-3-3-3 M19 9l-3 3 3 3 M2 12h20 M12 2v20',
+  layers: 'M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5',
+  zoom_in: 'M11 8v6 M8 11h6 M21 21l-4.35-4.35 M17 11A6 6 0 115 11a6 6 0 0112 0z',
+  zoom_out: 'M8 11h6 M21 21l-4.35-4.35 M17 11A6 6 0 115 11a6 6 0 0112 0z',
+  group: 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',
+  auto_layout: 'M4 4h6v6H4z M14 4h6v6h-6z M9 14h6v6H9z M7 10v2h0 M17 10v4h-2 M9 17h-2v-3',
+  upload: 'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M17 8l-5-5-5 5 M12 3v12',
+  connect: 'M18 8a3 3 0 100-6 3 3 0 000 6z M6 21a3 3 0 100-6 3 3 0 000 6z M15.35 6.35L8.65 16.65',
+  filter: 'M22 3H2l8 9.46V19l4 2v-8.54L22 3z',
+  sort: 'M3 6h18 M6 12h12 M9 18h6',
 }
 
 export function Icon({ name, size = 16, style, className, onClick }) {
@@ -63,13 +76,13 @@ export function Btn({ children, onClick, variant = 'ghost', size = 'md', style, 
     icon_sm: { padding: 4, width: 24, height: 24, borderRadius: 7 },
   }
   const variants = {
-    ghost: { background: 'transparent', color: '#7a6a58' },
-    subtle: { background: 'rgba(255,255,255,0.06)', color: '#c8b89a', border: '1px solid rgba(255,255,255,0.08)' },
-    primary: { background: 'rgba(200,160,100,0.14)', color: '#c8a064', border: '1px solid rgba(200,160,100,0.22)' },
-    danger: { background: 'rgba(220,60,60,0.1)', color: '#e05040', border: '1px solid rgba(220,60,60,0.18)' },
-    solid: { background: 'rgba(200,160,100,0.85)', color: '#1a1208', border: 'none' },
-    dark: { background: 'rgba(0,0,0,0.4)', color: '#c8b89a', border: '1px solid rgba(255,255,255,0.09)' },
-    active: { background: 'rgba(255,255,255,0.1)', color: '#f0e6d3', border: '1px solid rgba(255,255,255,0.12)' },
+    ghost:   { background: 'transparent',                         color: 'var(--text-dim,#7a6a58)' },
+    subtle:  { background: 'rgba(255,255,255,0.06)',              color: 'var(--text-secondary,#c8b89a)', border: '1px solid rgba(255,255,255,0.08)' },
+    primary: { background: 'var(--accent-15,rgba(200,160,100,0.15))', color: 'var(--accent,#c8a064)', border: '1px solid var(--accent-22,rgba(200,160,100,0.22))' },
+    danger:  { background: 'rgba(220,60,60,0.1)',                 color: '#e05040', border: '1px solid rgba(220,60,60,0.18)' },
+    solid:   { background: 'var(--accent,#c8a064)',               color: '#1a1208', border: 'none' },
+    dark:    { background: 'rgba(0,0,0,0.4)',                     color: 'var(--text-secondary,#c8b89a)', border: '1px solid rgba(255,255,255,0.09)' },
+    active:  { background: 'var(--accent-18,rgba(200,160,100,0.18))', color: 'var(--text-primary,#f0e6d3)', border: '1px solid var(--accent-22,rgba(200,160,100,0.22))' },
   }
   return (
     <button type={type} onClick={disabled ? undefined : onClick} title={title}
@@ -111,7 +124,7 @@ export function Input({ value, onChange, placeholder, style, autoFocus, onKeyDow
         borderRadius: 10, padding: '8px 12px', color: '#e2d9c8', fontSize: 13,
         outline: 'none', width: '100%', transition: 'border-color 0.12s', ...style,
       }}
-      onFocus={e => e.target.style.borderColor = 'rgba(200,160,100,0.45)'}
+      onFocus={e => e.target.style.borderColor = 'var(--accent,rgba(200,160,100,0.6))'}
       onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; if (onBlur) onBlur() }}
     />
   )
@@ -126,9 +139,9 @@ export function Textarea({ value, onChange, placeholder, rows = 4, style }) {
         background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
         borderRadius: 10, padding: '9px 12px', color: '#e2d9c8', fontSize: 13,
         lineHeight: 1.75, outline: 'none', width: '100%', resize: 'vertical',
-        transition: 'border-color 0.12s', fontFamily: "'DM Sans', sans-serif", ...style,
+        transition: 'border-color 0.12s', fontFamily: "var(--font-body)", ...style,
       }}
-      onFocus={e => e.target.style.borderColor = 'rgba(200,160,100,0.45)'}
+      onFocus={e => e.target.style.borderColor = 'var(--accent,rgba(200,160,100,0.6))'}
       onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.09)'}
     />
   )
@@ -152,8 +165,8 @@ export function Dropdown({ value, options, onChange, placeholder = 'Sélectionne
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
         padding: '7px 12px', borderRadius: 10, cursor: 'pointer',
         background: 'rgba(255,255,255,0.05)',
-        border: `1px solid ${open ? 'rgba(200,160,100,0.4)' : 'rgba(255,255,255,0.09)'}`,
-        fontSize: 13, color: selected ? '#e2d9c8' : '#4a4030',
+        border: open ? '1px solid var(--accent,rgba(200,160,100,0.4))' : '1px solid rgba(255,255,255,0.09)',
+        fontSize: 13, color: selected ? 'var(--text-primary,#e2d9c8)' : '#4a4030',
       }}>
         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
         <Icon name="chevron_down" size={12} style={{ opacity: 0.4, flexShrink: 0 }} />
@@ -173,8 +186,8 @@ export function Dropdown({ value, options, onChange, placeholder = 'Sélectionne
               <div key={i} onClick={() => { onChange(val); setOpen(false) }}
                 style={{
                   padding: '8px 13px', fontSize: 13, cursor: 'pointer',
-                  color: isSelected ? '#c8a064' : '#c8b89a',
-                  background: isSelected ? 'rgba(200,160,100,0.1)' : 'transparent',
+                  color: isSelected ? 'var(--accent,#c8a064)' : 'var(--text-secondary,#c8b89a)',
+                  background: isSelected ? 'var(--accent-10,rgba(200,160,100,0.1))' : 'transparent',
                   display: 'flex', alignItems: 'center', gap: 8,
                 }}
                 onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
@@ -182,7 +195,7 @@ export function Dropdown({ value, options, onChange, placeholder = 'Sélectionne
               >
                 {typeof opt === 'object' && opt.icon && <span>{opt.icon}</span>}
                 {lbl}
-                {isSelected && <Icon name="check" size={12} style={{ marginLeft: 'auto', color: '#c8a064' }} />}
+                {isSelected && <Icon name="check" size={12} style={{ marginLeft: 'auto', color: 'var(--accent,#c8a064)' }} />}
               </div>
             )
           })}
@@ -218,7 +231,7 @@ export function Modal({ title, children, onClose, width = 520, noPad = false }) 
             padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)',
             flexShrink: 0,
           }}>
-            <span style={{ fontFamily: "'Lora', serif", fontSize: 16, color: '#f0e6d3' }}>{title}</span>
+            <span style={{ fontFamily: "var(--font)", fontSize: 16, color: 'var(--text-primary,#f0e6d3)' }}>{title}</span>
             <Btn size="icon" variant="ghost" onClick={onClose}><Icon name="x" size={14} /></Btn>
           </div>
         )}
@@ -259,7 +272,7 @@ export function PropRow({ label, icon, children, style }) {
     }}>
       <div style={{
         width: 160, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 7,
-        padding: '7px 10px 7px 0', color: '#5a4a38', fontSize: 12,
+        padding: '7px 10px 7px 0', color: 'var(--text-dim,#5a4a38)', fontSize: 12,
       }}>
         {icon && <span style={{ fontSize: 13 }}>{icon}</span>}
         <span>{label}</span>
@@ -287,7 +300,7 @@ export function InlineEdit({ value, onChange, placeholder, style, multiline = fa
           style={{
             background: 'transparent', border: 'none', borderBottom: '1px solid rgba(200,160,100,0.4)',
             color: '#e2d9c8', fontSize, width: '100%', outline: 'none', resize: 'none',
-            fontFamily: "'DM Sans', sans-serif", lineHeight: 1.7, ...style,
+            fontFamily: "var(--font-body)", lineHeight: 1.7, ...style,
           }}
           rows={3}
         />
@@ -309,6 +322,77 @@ export function InlineEdit({ value, onChange, placeholder, style, multiline = fa
       style={{ cursor: 'text', color: value ? '#e2d9c8' : '#4a4030', fontSize, ...style }}>
       {value || placeholder || '—'}
     </span>
+  )
+}
+
+// ─── Emoji Grid & Picker ──────────────────────────────────────
+export const EMOJI_GRID = [
+  '😀','😂','😍','🥳','😎','🤔','😢','😡','🥺','🤩',
+  '👤','👥','👑','🧙','🧝','🧛','🧟','🦸','👻','💀',
+  '⚔️','🛡','🗡','🏹','🔮','✨','💎','🔥','❄️','⚡',
+  '🌍','🗺','🏰','🏛','🏙','🏡','⛪','🗿','🌋','🏔',
+  '📍','🌊','🌲','🌸','🍃','🌿','🦎','🐉','🦅','🐺',
+  '📜','📖','📚','📝','📅','📌','🔖','🏷','📊','📈',
+  '⚜️','🪶','🎭','🎪','🎉','🎵','🔔','💡','🕯','🧪',
+  '⚗️','🌀','⛩','🔭','⚖️','🧭','🗝','💰','🎲','🃏',
+  '❤️','💔','💜','💙','💚','💛','🧡','🤎','🖤','🤍',
+  '⭐','✦','◆','●','■','▲','☰','#','☀️','🌙',
+]
+
+export function EmojiPicker({ value, onChange, style }) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const ref = useRef()
+
+  useEffect(() => {
+    if (!open) return
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [open])
+
+  const filtered = search ? EMOJI_GRID.filter(e => e.includes(search)) : EMOJI_GRID
+
+  return (
+    <div ref={ref} style={{ position:'relative', display:'inline-block', ...style }}>
+      <button onClick={() => setOpen(v => !v)}
+        style={{
+          width:44, height:44, borderRadius:10,
+          border: open ? '1px solid rgba(200,160,100,0.4)' : '1px solid rgba(255,255,255,0.09)',
+          background: open ? 'rgba(200,160,100,0.1)' : 'rgba(255,255,255,0.05)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          cursor:'pointer', fontSize:22, transition:'all 0.12s',
+        }}>
+        {value || '📌'}
+      </button>
+      {open && (
+        <div style={{
+          position:'absolute', top:'calc(100% + 6px)', left:0, zIndex:600,
+          background:'rgba(10,6,1,0.92)', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)',
+          border:'1px solid rgba(255,200,120,0.14)', borderRadius:12, overflow:'hidden',
+          boxShadow:'0 8px 32px rgba(0,0,0,0.7)', width:260, padding:'8px',
+        }}>
+          <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Rechercher…"
+            style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:6, padding:'5px 8px', color:'#c8b89a', fontSize:11, outline:'none', marginBottom:6, boxSizing:'border-box' }}
+          />
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(10, 1fr)', gap:2, maxHeight:160, overflowY:'auto' }}>
+            {filtered.map((em, i) => (
+              <button key={i} onClick={() => { onChange(em); setOpen(false); setSearch('') }}
+                style={{
+                  width:'100%', aspectRatio:'1', display:'flex', alignItems:'center', justifyContent:'center',
+                  background: value===em ? 'rgba(200,160,100,0.2)' : 'transparent',
+                  border:'none', borderRadius:4, cursor:'pointer', fontSize:14, padding:0, transition:'background 0.08s',
+                }}
+                onMouseEnter={e => { if(value!==em) e.currentTarget.style.background='rgba(255,255,255,0.08)' }}
+                onMouseLeave={e => { if(value!==em) e.currentTarget.style.background='transparent' }}>
+                {em}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 

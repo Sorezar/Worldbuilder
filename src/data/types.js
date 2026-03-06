@@ -105,6 +105,20 @@ export const BUILTIN_TYPES = [
   },
   { id: 'flora', name: 'Flora', icon: '🌸', color: '#65a30d', parentId: 'ecology', defaultProps: [] },
   { id: 'fauna', name: 'Fauna', icon: '🦎', color: '#4d7c0f', parentId: 'ecology', defaultProps: [] },
+
+  // ── Special views (virtual = not in Nouveau menu) ──
+  {
+    id: 'family_tree', name: 'Arbre Généalogique', icon: '🌳', color: '#a78bfa',
+    virtual: true, viewMode: 'family_tree', defaultProps: [],
+  },
+  {
+    id: 'geo_map', name: 'Carte Géographique', icon: '🗺', color: '#f59e0b',
+    virtual: true, viewMode: 'map', defaultProps: [],
+  },
+  {
+    id: 'canvas', name: 'Canvas', icon: '🎨', color: '#06b6d4',
+    virtual: true, viewMode: 'canvas', defaultProps: [],
+  },
 ]
 
 export const BUILTIN_TYPE_MAP = Object.fromEntries(BUILTIN_TYPES.map(t => [t.id, t]))
