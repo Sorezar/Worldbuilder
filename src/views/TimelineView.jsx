@@ -5,7 +5,7 @@ import { BUILTIN_TYPES, getEffectiveProps } from '../data/types.js'
 const BUILTIN_COLORS = { character:'#c084fc', location:'#f59e0b', faction:'#ef4444', item:'#06b6d4', event:'#22c55e', quest:'#16a34a', battle:'#dc2626', festival:'#d97706', prophecy:'#7c3aed', coronation:'#c8a064' }
 
 function getColor(typeId, customTypes) {
-  return customTypes?.find(x=>x.id===typeId)?.color || BUILTIN_COLORS[typeId] || '#9a8a70'
+  return customTypes?.find(x=>x.id===typeId)?.color || BUILTIN_COLORS[typeId] || '#8a8a8a'
 }
 function getIcon(typeId, customTypes) {
   return [...BUILTIN_TYPES,...(customTypes||[])].find(x=>x.id===typeId)?.icon || '📅'
@@ -89,67 +89,61 @@ export default function TimelineView({ cards, customTypes, calendars, onOpenCard
     cards.filter(c => c.typeId==='character' || (customTypes||[]).find(t=>t.id===c.typeId&&t.parentId==='character'))
   , [cards, customTypes])
 
-  // Build timeline entries: event-type cards + any card with a DATE prop value
+  // Build timeline entries: any card that has a date prop with a value
   const timelineEntries = useMemo(() => {
     const allEventTypes = new Set(['event','quest','battle','festival','prophecy','coronation'])
     ;(customTypes||[]).forEach(t => { if(t.parentId==='event') allEventTypes.add(t.id) })
 
     const entries = []
+    const seen = new Set() // avoid duplicates per card+propId
 
-    // 1. Event-type cards (use their 'date' or 'evdate' prop)
-    cards
-      .filter(c => allEventTypes.has(c.typeId))
-      .forEach(card => {
-        const dateVal = card.props?.evdate || card.props?.date || ''
+    cards.forEach(card => {
+      const isEvent = allEventTypes.has(card.typeId)
+      const typeOverrides = card.propTypeOverrides || {}
+
+      // Check type-defined props (including inherited)
+      const effectiveProps = getEffectiveProps(card.typeId, customTypes)
+      effectiveProps.forEach(p => {
+        const override = typeOverrides[p.id]
+        const fieldType = override?.fieldType || p.fieldType
+        if (fieldType !== 'date') return
+        const val = card.props?.[p.id]
+        if (!val) return
+        const key = card.id + '_' + p.id
+        if (seen.has(key)) return
+        seen.add(key)
         entries.push({
-          id: card.id + '_event',
-          cardId: card.id,
-          card,
-          label: card.name,
-          dateStr: dateVal,
-          propName: null,
-          isEvent: true,
-          sortKey: parseDateKey(dateVal, calendars),
+          id: key, cardId: card.id, card, label: card.name,
+          dateStr: val, propName: isEvent ? null : p.name,
+          isEvent, sortKey: parseDateKey(val, calendars),
         })
       })
 
-    // 2. Non-event cards that have DATE extra props with a value
-    cards
-      .filter(c => !allEventTypes.has(c.typeId))
-      .forEach(card => {
-        // Check extra props for date fields
-        ;(card.extraProps||[]).forEach(ep => {
-          if (ep.fieldType !== 'date' || !ep.value) return
-          entries.push({
-            id: card.id + '_' + ep.id,
-            cardId: card.id,
-            card,
-            label: card.name,
-            dateStr: ep.value,
-            propName: ep.name || ep.id,
-            isEvent: false,
-            sortKey: parseDateKey(ep.value, calendars),
-          })
+      // Check extra props for date fields
+      ;(card.extraProps||[]).forEach(ep => {
+        if (ep.fieldType !== 'date' || !ep.value) return
+        const key = card.id + '_' + ep.id
+        if (seen.has(key)) return
+        seen.add(key)
+        entries.push({
+          id: key, cardId: card.id, card, label: card.name,
+          dateStr: ep.value, propName: ep.name || ep.id,
+          isEvent: false, sortKey: parseDateKey(ep.value, calendars),
         })
-        // Check builtin/type-defined props for date fields
-        const effectiveProps = getEffectiveProps(card.typeId, customTypes)
-        effectiveProps
-          .filter(p => p.fieldType === 'date')
-          .forEach(p => {
-            const val = card.props?.[p.id]
-            if (!val) return
-            entries.push({
-              id: card.id + '_' + p.id,
-              cardId: card.id,
-              card,
-              label: card.name,
-              dateStr: val,
-              propName: p.name,
-              isEvent: false,
-              sortKey: parseDateKey(val, calendars),
-            })
-          })
       })
+
+      // For event cards without any date prop matched, try evdate/date directly
+      if (isEvent && !entries.some(e => e.cardId === card.id)) {
+        const dateVal = card.props?.evdate || card.props?.date || ''
+        if (dateVal) {
+          entries.push({
+            id: card.id + '_event', cardId: card.id, card, label: card.name,
+            dateStr: dateVal, propName: null,
+            isEvent: true, sortKey: parseDateKey(dateVal, calendars),
+          })
+        }
+      }
+    })
 
     return entries
       .filter(e => e.sortKey !== Infinity)
@@ -169,7 +163,7 @@ export default function TimelineView({ cards, customTypes, calendars, onOpenCard
     <div style={{ flex:1, display:'flex', overflow:'hidden', background:'var(--bg-base-50,rgba(8,4,0,0.5))', backdropFilter:'blur(40px) saturate(1.4)', WebkitBackdropFilter:'blur(40px) saturate(1.4)', borderRadius:16, border:'1px solid var(--border-09,rgba(255,200,120,0.09))' }}>
       {/* Left panel */}
       <div style={{ width:210, flexShrink:0, borderRight:'1px solid rgba(255,255,255,0.07)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
-        <div style={{ padding:'12px 14px 8px', borderBottom:'1px solid rgba(255,255,255,0.06)', fontSize:12, color:'var(--text-muted,#7a6a58)', fontFamily:"var(--font)" }}>Personnages</div>
+        <div style={{ padding:'12px 14px 8px', borderBottom:'1px solid rgba(255,255,255,0.06)', fontSize:12, color:'var(--text-muted,#8a8a8a)', fontFamily:"var(--font)" }}>Personnages</div>
         <div style={{ flex:1, overflow:'auto', padding:'6px 8px' }}>
           {characterCards.map(char => {
             const sel = selectedChars.includes(char.id)
@@ -181,24 +175,24 @@ export default function TimelineView({ cards, customTypes, calendars, onOpenCard
                 {char.image
                   ? <img src={char.image} alt="" style={{ width:20,height:20,borderRadius:'50%',objectFit:'cover',flexShrink:0 }} />
                   : <div style={{ width:20,height:20,borderRadius:'50%',background:'rgba(192,132,252,0.2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,flexShrink:0 }}>👤</div>}
-                <span style={{ fontSize:12, color:sel?'#f0e6d3':'#9a8a70', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{char.name}</span>
+                <span style={{ fontSize:12, color:sel?'#f0f0f0':'#8a8a8a', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{char.name}</span>
               </div>
             )
           })}
-          {characterCards.length===0 && <p style={{ color:'var(--text-darker,#3a2a18)', fontSize:12, padding:'10px 6px' }}>Aucun personnage</p>}
+          {characterCards.length===0 && <p style={{ color:'var(--text-darker,#2e2e2e)', fontSize:12, padding:'10px 6px' }}>Aucun personnage</p>}
         </div>
 
         {/* Calendar selector */}
         {(calendars||[]).length > 0 && (
           <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', padding:'10px 12px' }}>
-            <div style={{ fontSize:10, color:'var(--text-darker,#3a2a18)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:7 }}>Référentiel</div>
+            <div style={{ fontSize:10, color:'var(--text-darker,#2e2e2e)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:7 }}>Référentiel</div>
             <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
-              <label style={{ display:'flex', alignItems:'center', gap:7, fontSize:12, color:viewCal==='real'?'#c8b89a':'#5a4a38', cursor:'pointer' }}>
+              <label style={{ display:'flex', alignItems:'center', gap:7, fontSize:12, color:viewCal==='real'?'#c0c0c0':'#5a5a5a', cursor:'pointer' }}>
                 <input type="radio" checked={viewCal==='real'} onChange={() => setViewCal('real')} style={{ accentColor:'var(--accent,#c8a064)' }} />
                 Grégorien
               </label>
               {(calendars||[]).map(cal => (
-                <label key={cal.id} style={{ display:'flex', alignItems:'center', gap:7, fontSize:12, color:viewCal===cal.id?'#c8b89a':'#5a4a38', cursor:'pointer' }}>
+                <label key={cal.id} style={{ display:'flex', alignItems:'center', gap:7, fontSize:12, color:viewCal===cal.id?'#c0c0c0':'#5a5a5a', cursor:'pointer' }}>
                   <input type="radio" checked={viewCal===cal.id} onChange={() => setViewCal(cal.id)} style={{ accentColor:'var(--accent,#c8a064)' }} />
                   {cal.name}
                 </label>
@@ -209,7 +203,7 @@ export default function TimelineView({ cards, customTypes, calendars, onOpenCard
 
         {selectedChars.length > 0 && (
           <div style={{ padding:'8px 12px', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
-            <button onClick={() => setSelectedChars([])} style={{ background:'none', border:'none', color:'var(--text-dim,#5a4a38)', fontSize:11, cursor:'pointer' }}>✕ Effacer filtre</button>
+            <button onClick={() => setSelectedChars([])} style={{ background:'none', border:'none', color:'var(--text-dim,#5a5a5a)', fontSize:11, cursor:'pointer' }}>✕ Effacer filtre</button>
           </div>
         )}
       </div>
@@ -217,16 +211,16 @@ export default function TimelineView({ cards, customTypes, calendars, onOpenCard
       {/* Timeline */}
       <div style={{ flex:1, overflow:'auto', padding:'24px 36px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
-          <h2 style={{ fontFamily:"var(--font)", fontSize:22, color:'var(--text-primary,#f0e6d3)', fontWeight:500, margin:0 }}>Timeline</h2>
+          <h2 style={{ fontFamily:"var(--font)", fontSize:22, color:'var(--text-primary,#f0f0f0)', fontWeight:500, margin:0 }}>Timeline</h2>
           <div style={{ position:'relative' }}>
-            <Icon name="search" size={12} style={{ position:'absolute', left:9, top:'50%', transform:'translateY(-50%)', color:'var(--text-dark,#4a3a28)' }} />
+            <Icon name="search" size={12} style={{ position:'absolute', left:9, top:'50%', transform:'translateY(-50%)', color:'var(--text-dark,#444444)' }} />
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Filtrer…"
-              style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:8, padding:'6px 10px 6px 26px', color:'var(--text-secondary,#c8b89a)', fontSize:12, outline:'none', width:160 }} />
+              style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:8, padding:'6px 10px 6px 26px', color:'var(--text-secondary,#c0c0c0)', fontSize:12, outline:'none', width:160 }} />
           </div>
         </div>
 
         {timelineEntries.length === 0 ? (
-          <div style={{ textAlign:'center', paddingTop:80, color:'var(--text-darker,#3a2a18)' }}>
+          <div style={{ textAlign:'center', paddingTop:80, color:'var(--text-darker,#2e2e2e)' }}>
             <Icon name="timeline" size={44} style={{ opacity:0.1, marginBottom:14 }} />
             <p style={{ fontSize:15 }}>{search ? 'Aucun élément correspondant' : 'Aucun élément avec date'}</p>
             <p style={{ fontSize:12, marginTop:8 }}>Créez des cartes de type Événement, ou ajoutez des propriétés Date à n'importe quelle carte.</p>
@@ -258,9 +252,9 @@ export default function TimelineView({ cards, customTypes, calendars, onOpenCard
                       <span style={{ fontSize:16, flexShrink:0, marginTop:1 }}>{getIcon(entry.card.typeId, customTypes)}</span>
                       <div style={{ flex:1 }}>
                         <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:3, flexWrap:'wrap' }}>
-                          <span style={{ fontFamily:"var(--font)", fontSize:14, color:'var(--text-primary,#f0e6d3)', fontWeight:500 }}>{entry.label}</span>
+                          <span style={{ fontFamily:"var(--font)", fontSize:14, color:'var(--text-primary,#f0f0f0)', fontWeight:500 }}>{entry.label}</span>
                           {entry.propName && (
-                            <span style={{ fontSize:10, color:'var(--text-dim,#5a4a38)', background:'rgba(255,255,255,0.06)', padding:'1px 6px', borderRadius:3 }}>{entry.propName}</span>
+                            <span style={{ fontSize:10, color:'var(--text-dim,#5a5a5a)', background:'rgba(255,255,255,0.06)', padding:'1px 6px', borderRadius:3 }}>{entry.propName}</span>
                           )}
                           {!entry.isEvent && (
                             <span style={{ fontSize:10, color:color, background:color+'14', padding:'1px 6px', borderRadius:3 }}>
@@ -268,21 +262,21 @@ export default function TimelineView({ cards, customTypes, calendars, onOpenCard
                             </span>
                           )}
                           {entry.isEvent && <Tag label={entry.card.typeId} color={color} size="sm" />}
-                          {dateLabel && <span style={{ fontSize:11, color:'var(--text-muted,#7a6a58)', marginLeft:'auto' }}>📅 {dateLabel}</span>}
+                          {dateLabel && <span style={{ fontSize:11, color:'var(--text-muted,#8a8a8a)', marginLeft:'auto' }}>📅 {dateLabel}</span>}
                         </div>
                         {entry.isEvent && entry.card.text && (
-                          <p style={{ fontSize:12, color:'var(--text-dim,#6a5a48)', lineHeight:1.5, marginBottom:6, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>{entry.card.text}</p>
+                          <p style={{ fontSize:12, color:'var(--text-dim,#5a5a5a)', lineHeight:1.5, marginBottom:6, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>{entry.card.text}</p>
                         )}
                         {(location || participants.length > 0) && (
                           <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center', marginTop:4 }}>
-                            {location && <span style={{ fontSize:11, color:'var(--text-dim,#6a5a48)' }}>📍 {location.name}</span>}
+                            {location && <span style={{ fontSize:11, color:'var(--text-dim,#5a5a5a)' }}>📍 {location.name}</span>}
                             {participants.slice(0,4).map(p => (
-                              <span key={p.id} style={{ display:'inline-flex', alignItems:'center', gap:3, fontSize:11, padding:'1px 6px', background:selectedChars.includes(p.id)?'rgba(192,132,252,0.2)':'rgba(255,255,255,0.05)', border:`1px solid ${selectedChars.includes(p.id)?'rgba(192,132,252,0.35)':'rgba(255,255,255,0.08)'}`, borderRadius:4, color:selectedChars.includes(p.id)?'#c084fc':'#7a6a58' }}>
+                              <span key={p.id} style={{ display:'inline-flex', alignItems:'center', gap:3, fontSize:11, padding:'1px 6px', background:selectedChars.includes(p.id)?'rgba(192,132,252,0.2)':'rgba(255,255,255,0.05)', border:`1px solid ${selectedChars.includes(p.id)?'rgba(192,132,252,0.35)':'rgba(255,255,255,0.08)'}`, borderRadius:4, color:selectedChars.includes(p.id)?'#c084fc':'#8a8a8a' }}>
                                 {p.image?<img src={p.image} alt="" style={{ width:11,height:11,borderRadius:'50%',objectFit:'cover' }} />:'👤'}
                                 {p.name}
                               </span>
                             ))}
-                            {participants.length > 4 && <span style={{ fontSize:11, color:'var(--text-dark,#4a3a28)' }}>+{participants.length-4}</span>}
+                            {participants.length > 4 && <span style={{ fontSize:11, color:'var(--text-dark,#444444)' }}>+{participants.length-4}</span>}
                           </div>
                         )}
                       </div>

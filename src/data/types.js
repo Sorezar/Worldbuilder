@@ -15,7 +15,7 @@ export const FIELD_TYPES = {
 export const BUILTIN_TYPES = [
   // ── Special / virtual ──
   {
-    id: 'text_field', name: 'Texte', icon: '☰', color: '#9a8a70',
+    id: 'text_field', name: 'Texte', icon: '☰', color: '#8a8a8a',
     virtual: true, // not creatable as standalone card
     defaultProps: [],
   },
@@ -79,7 +79,7 @@ export const BUILTIN_TYPES = [
     defaultProps: [
       { id: 'participants', name: 'Participants', fieldType: FIELD_TYPES.CARD_REF, multiple: true, targetTypeIds: ['character'] },
       { id: 'location', name: 'Location', fieldType: FIELD_TYPES.CARD_REF, multiple: false, targetTypeIds: ['location'] },
-      { id: 'date', name: 'Date', fieldType: FIELD_TYPES.TEXT, multiple: false },
+      { id: 'date', name: 'Date', fieldType: FIELD_TYPES.DATE, multiple: false },
     ],
   },
   { id: 'quest', name: 'Quest', icon: '📜', color: '#16a34a', parentId: 'event', defaultProps: [] },

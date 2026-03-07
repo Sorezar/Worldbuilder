@@ -122,12 +122,15 @@ const DEFAULT_WORLD = {
 }
 
 // ─── Themes ──────────────────────────────────────────────────
+// Shared neutral white text scale (same for all themes)
+const TEXT = { textPrimary: '#f0f0f0', textSecondary: '#c0c0c0', textMuted: '#8a8a8a', textDim: '#5a5a5a', textDark: '#444444', textDarker: '#2e2e2e' }
+
 export const THEMES = {
   warm: {
     id: 'warm', name: 'Parchemin', icon: '☀️',
     font: "'Lora', serif", fontBody: "'DM Sans', sans-serif",
     accent: '#c8a064', accentLight: 'rgba(200,160,100,',
-    textPrimary: '#f0e6d3', textSecondary: '#c8b89a', textMuted: '#9a8a70', textDim: '#5a4a38', textDark: '#4a3a28', textDarker: '#3a2a18',
+    ...TEXT,
     bgBase: 'rgba(6,3,0,', bgPanel: 'rgba(10,6,1,', bgOverlay: 'rgba(5,2,0,',
     borderColor: 'rgba(255,200,120,', defaultBg: 'linear-gradient(145deg,#1c1408,#0e0b06)',
   },
@@ -135,7 +138,7 @@ export const THEMES = {
     id: 'cold', name: 'Givre', icon: '❄️',
     font: "'Lora', serif", fontBody: "'DM Sans', sans-serif",
     accent: '#64a0c8', accentLight: 'rgba(100,160,200,',
-    textPrimary: '#d3e6f0', textSecondary: '#9abcc8', textMuted: '#708a9a', textDim: '#38505a', textDark: '#28404a', textDarker: '#182a3a',
+    ...TEXT,
     bgBase: 'rgba(0,3,6,', bgPanel: 'rgba(1,6,10,', bgOverlay: 'rgba(0,2,5,',
     borderColor: 'rgba(120,180,255,', defaultBg: 'linear-gradient(145deg,#08141c,#060b0e)',
   },
@@ -143,7 +146,7 @@ export const THEMES = {
     id: 'purple', name: 'Mystique', icon: '🔮',
     font: "'Lora', serif", fontBody: "'DM Sans', sans-serif",
     accent: '#a87bdb', accentLight: 'rgba(168,123,219,',
-    textPrimary: '#e6d8f0', textSecondary: '#b89ac8', textMuted: '#8a709a', textDim: '#5a3870', textDark: '#4a2860', textDarker: '#3a1850',
+    ...TEXT,
     bgBase: 'rgba(4,0,6,', bgPanel: 'rgba(8,1,12,', bgOverlay: 'rgba(3,0,5,',
     borderColor: 'rgba(180,120,255,', defaultBg: 'linear-gradient(145deg,#14081c,#0b060e)',
   },
@@ -151,7 +154,7 @@ export const THEMES = {
     id: 'green', name: 'Sylvestre', icon: '🌿',
     font: "'Lora', serif", fontBody: "'DM Sans', sans-serif",
     accent: '#6ab87a', accentLight: 'rgba(106,184,122,',
-    textPrimary: '#d8f0dc', textSecondary: '#9ac8a0', textMuted: '#70a07a', textDim: '#385a40', textDark: '#284a30', textDarker: '#183a20',
+    ...TEXT,
     bgBase: 'rgba(0,4,1,', bgPanel: 'rgba(1,8,2,', bgOverlay: 'rgba(0,3,1,',
     borderColor: 'rgba(120,220,140,', defaultBg: 'linear-gradient(145deg,#081c0a,#060e07)',
   },
@@ -159,7 +162,7 @@ export const THEMES = {
     id: 'rose', name: 'Rose', icon: '🌹',
     font: "'Lora', serif", fontBody: "'DM Sans', sans-serif",
     accent: '#d4768a', accentLight: 'rgba(212,118,138,',
-    textPrimary: '#f0dce2', textSecondary: '#c89aa8', textMuted: '#9a7080', textDim: '#5a3845', textDark: '#4a2835', textDarker: '#3a1828',
+    ...TEXT,
     bgBase: 'rgba(6,0,2,', bgPanel: 'rgba(10,1,4,', bgOverlay: 'rgba(5,0,2,',
     borderColor: 'rgba(255,140,170,', defaultBg: 'linear-gradient(145deg,#1c0810,#0e060a)',
   },
@@ -167,7 +170,7 @@ export const THEMES = {
     id: 'ember', name: 'Braise', icon: '🔥',
     font: "'Lora', serif", fontBody: "'DM Sans', sans-serif",
     accent: '#e07040', accentLight: 'rgba(224,112,64,',
-    textPrimary: '#f0e0d3', textSecondary: '#c8a08a', textMuted: '#9a7a60', textDim: '#5a4030', textDark: '#4a3020', textDarker: '#3a2018',
+    ...TEXT,
     bgBase: 'rgba(6,2,0,', bgPanel: 'rgba(12,4,1,', bgOverlay: 'rgba(5,1,0,',
     borderColor: 'rgba(255,160,100,', defaultBg: 'linear-gradient(145deg,#1c0c04,#0e0804)',
   },
@@ -175,7 +178,7 @@ export const THEMES = {
     id: 'midnight', name: 'Minuit', icon: '🌑',
     font: "'Lora', serif", fontBody: "'DM Sans', sans-serif",
     accent: '#7a8cc8', accentLight: 'rgba(122,140,200,',
-    textPrimary: '#d8ddf0', textSecondary: '#9aa4c8', textMuted: '#6a749a', textDim: '#3a4060', textDark: '#2a3050', textDarker: '#1a2040',
+    ...TEXT,
     bgBase: 'rgba(1,1,4,', bgPanel: 'rgba(3,3,8,', bgOverlay: 'rgba(1,1,3,',
     borderColor: 'rgba(120,140,220,', defaultBg: 'linear-gradient(145deg,#0a0c1c,#06070e)',
   },
@@ -183,7 +186,7 @@ export const THEMES = {
     id: 'sand', name: 'Sable', icon: '🏜️',
     font: "'Lora', serif", fontBody: "'DM Sans', sans-serif",
     accent: '#b8a070', accentLight: 'rgba(184,160,112,',
-    textPrimary: '#ece4d4', textSecondary: '#c0b498', textMuted: '#8a8068', textDim: '#504838', textDark: '#403828', textDarker: '#302820',
+    ...TEXT,
     bgBase: 'rgba(4,3,1,', bgPanel: 'rgba(8,6,2,', bgOverlay: 'rgba(3,2,1,',
     borderColor: 'rgba(200,180,130,', defaultBg: 'linear-gradient(145deg,#181408,#0e0c06)',
   },

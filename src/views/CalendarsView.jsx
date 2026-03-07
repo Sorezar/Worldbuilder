@@ -61,8 +61,8 @@ export default function CalendarsView({ calendars, onCreate, onUpdate, onDelete,
       <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.6)' }} onClick={onClose} />
       <div style={{ position:'relative', background:'rgba(12,8,2,0.85)', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid rgba(255,200,120,0.12)', borderRadius:18, width:680, maxHeight:'80vh', display:'flex', flexDirection:'column', boxShadow:'0 24px 80px rgba(0,0,0,0.8)' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
-          <h2 style={{ fontFamily:"var(--font)", fontSize:18, color:'var(--text-primary,#f0e6d3)', fontWeight:500, margin:0 }}>📅 Calendriers</h2>
-          <button onClick={onClose} style={{ background:'none', border:'none', color:'var(--text-dim,#5a4a38)', cursor:'pointer', fontSize:18, lineHeight:1 }}>✕</button>
+          <h2 style={{ fontFamily:"var(--font)", fontSize:18, color:'var(--text-primary,#f0f0f0)', fontWeight:500, margin:0 }}>📅 Calendriers</h2>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:'var(--text-dim,#5a5a5a)', cursor:'pointer', fontSize:18, lineHeight:1 }}>✕</button>
         </div>
 
         <div style={{ flex:1, overflow:'auto', padding:20 }}>
@@ -74,7 +74,7 @@ export default function CalendarsView({ calendars, onCreate, onUpdate, onDelete,
                 <Btn variant="primary" onClick={startNew}><Icon name="plus" size={12} /> Nouveau calendrier</Btn>
               </div>
               {calendars.length === 0 && (
-                <div style={{ textAlign:'center', padding:'40px 0', color:'var(--text-darker,#3a2a18)', fontSize:13 }}>
+                <div style={{ textAlign:'center', padding:'40px 0', color:'var(--text-darker,#2e2e2e)', fontSize:13 }}>
                   <p>Aucun calendrier custom</p>
                   <p style={{ marginTop:6, fontSize:11 }}>Par défaut, les dates utilisent le calendrier grégorien réel.</p>
                 </div>
@@ -98,18 +98,18 @@ function CalendarCard({ cal, onEdit, onDelete }) {
     <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:14, padding:'14px 16px' }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
         <div>
-          <span style={{ fontFamily:"var(--font)", fontSize:15, color:'var(--text-primary,#f0e6d3)' }}>{cal.name}</span>
-          <span style={{ marginLeft:10, fontSize:11, color:'var(--text-dim,#5a4a38)' }}>Ère : <b style={{ color:'var(--accent,#c8a064)' }}>{cal.epochName||'—'}</b></span>
-          <span style={{ marginLeft:10, fontSize:11, color:'var(--text-dim,#5a4a38)' }}>Décalage : {cal.offsetDays||0} jours</span>
+          <span style={{ fontFamily:"var(--font)", fontSize:15, color:'var(--text-primary,#f0f0f0)' }}>{cal.name}</span>
+          <span style={{ marginLeft:10, fontSize:11, color:'var(--text-dim,#5a5a5a)' }}>Ère : <b style={{ color:'var(--accent,#c8a064)' }}>{cal.epochName||'—'}</b></span>
+          <span style={{ marginLeft:10, fontSize:11, color:'var(--text-dim,#5a5a5a)' }}>Décalage : {cal.offsetDays||0} jours</span>
         </div>
         <div style={{ display:'flex', gap:8 }}>
-          <button onClick={onEdit} style={{ background:'none', border:'none', color:'var(--text-dim,#5a4a38)', cursor:'pointer', fontSize:12 }} onMouseEnter={e=>e.currentTarget.style.color='#c8a064'} onMouseLeave={e=>e.currentTarget.style.color='#5a4a38'}>Modifier</button>
+          <button onClick={onEdit} style={{ background:'none', border:'none', color:'var(--text-dim,#5a5a5a)', cursor:'pointer', fontSize:12 }} onMouseEnter={e=>e.currentTarget.style.color='#c8a064'} onMouseLeave={e=>e.currentTarget.style.color='#5a5a5a'}>Modifier</button>
           <button onClick={onDelete} style={{ background:'none', border:'none', color:'#5a3030', cursor:'pointer', fontSize:12 }} onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} onMouseLeave={e=>e.currentTarget.style.color='#5a3030'}>Supprimer</button>
         </div>
       </div>
       {months.length > 0 && (
         <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
-          {months.map((m,i) => <span key={i} style={{ fontSize:10, color:'var(--text-muted,#7a6a58)', background:'rgba(255,255,255,0.04)', padding:'2px 7px', borderRadius:4 }}>{m}</span>)}
+          {months.map((m,i) => <span key={i} style={{ fontSize:10, color:'var(--text-muted,#8a8a8a)', background:'rgba(255,255,255,0.04)', padding:'2px 7px', borderRadius:4 }}>{m}</span>)}
         </div>
       )}
     </div>
@@ -126,7 +126,7 @@ function CalendarForm({ form, setForm, onSave, onCancel, isNew }) {
 
   return (
     <div className="anim-fadeup">
-      <h3 style={{ fontFamily:"var(--font)", fontSize:16, color:'var(--text-primary,#f0e6d3)', marginBottom:20, fontWeight:500 }}>
+      <h3 style={{ fontFamily:"var(--font)", fontSize:16, color:'var(--text-primary,#f0f0f0)', marginBottom:20, fontWeight:500 }}>
         {isNew ? 'Nouveau calendrier' : `Modifier : ${form.name}`}
       </h3>
 
@@ -142,14 +142,14 @@ function CalendarForm({ form, setForm, onSave, onCancel, isNew }) {
       <Field label="Décalage par rapport au 1er Jan 2000 (en jours)" style={{ marginBottom:18 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <input type="number" value={form.offsetDays||0} onChange={e=>set('offsetDays',parseInt(e.target.value)||0)} style={{ ...inp, width:120 }} />
-          <span style={{ fontSize:11, color:'var(--text-dark,#4a3a28)' }}>
+          <span style={{ fontSize:11, color:'var(--text-dark,#444444)' }}>
             = Le "Jour 1" du calendrier correspond au {new Date(new Date('2000-01-01').getTime() - (form.offsetDays||0)*86400000).toLocaleDateString('fr-FR')} (grégorien)
           </span>
         </div>
       </Field>
 
       <div style={{ marginBottom:18 }}>
-        <div style={{ fontSize:11, color:'var(--text-dark,#4a3a28)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>Noms des 12 mois</div>
+        <div style={{ fontSize:11, color:'var(--text-dark,#444444)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>Noms des 12 mois</div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:6 }}>
           {Array.from({length:12},(_,i) => (
             <input key={i} value={(form.months||[])[i]||''} onChange={e=>setMonth(i,e.target.value)}
@@ -169,10 +169,10 @@ function CalendarForm({ form, setForm, onSave, onCancel, isNew }) {
 function Field({ label, children, style }) {
   return (
     <div style={style}>
-      <div style={{ fontSize:11, color:'var(--text-dark,#4a3a28)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>{label}</div>
+      <div style={{ fontSize:11, color:'var(--text-dark,#444444)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>{label}</div>
       {children}
     </div>
   )
 }
 
-const inp = { width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:10, padding:'8px 11px', color:'var(--text-primary,#e2d9c8)', fontSize:13, outline:'none', boxSizing:'border-box' }
+const inp = { width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:10, padding:'8px 11px', color:'var(--text-primary,#f0f0f0)', fontSize:13, outline:'none', boxSizing:'border-box' }

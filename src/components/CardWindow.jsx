@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Icon, Btn, Tag, InlineEdit, Modal } from './ui.jsx'
+import { Icon, Btn, Tag, InlineEdit, Modal, ConfirmModal } from './ui.jsx'
 import { getEffectiveProps, getType, FIELD_TYPES, BUILTIN_TYPES } from '../data/types.js'
 import { DropdownPropPicker } from '../views/CardTypesView.jsx'
 import { uid } from '../store/useStore.js'
@@ -8,6 +8,7 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
   const type           = getType(card.typeId, customTypes)
   const effectiveProps = getEffectiveProps(card.typeId, customTypes)
   const [addingExtraProp, setAddingExtraProp] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [dragPropId, setDragPropId] = useState(null)
   const [dragOverPropId, setDragOverPropId] = useState(null)
   const fileRef = useRef()
@@ -18,10 +19,19 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
   const removeExtra  = epId => upd({ extraProps: (card.extraProps || []).filter(ep => ep.id !== epId) })
   const renameProp   = (propId, newName) => upd({ propNameOverrides: { ...(card.propNameOverrides || {}), [propId]: newName } })
   const nameOverrides = card.propNameOverrides || {}
+  const emojiOverrides = card.propEmojiOverrides || {}
 
-  // Merge all props into one ordered list
+  // Merge all props into one ordered list, applying type overrides for default props
   const extraProps = card.extraProps || []
-  const allProps = [...effectiveProps.map(p => ({ ...p, _source: 'default' })), ...extraProps.map(ep => ({ ...ep, _source: 'extra' }))]
+  const typeOverrides = card.propTypeOverrides || {}
+  const allProps = [
+    ...effectiveProps.map(p => {
+      const override = typeOverrides[p.id]
+      if (override?.fieldType) return { ...p, fieldType: override.fieldType, targetTypeIds: override.targetTypeIds || p.targetTypeIds, _source: 'default' }
+      return { ...p, _source: 'default' }
+    }),
+    ...extraProps.map(ep => ({ ...ep, _source: 'extra' })),
+  ]
   const propOrder = card.propOrder || allProps.map(p => p.id)
   const orderedProps = [
     ...propOrder.map(id => allProps.find(p => p.id === id)).filter(Boolean),
@@ -66,13 +76,13 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: 1, overflow: 'hidden', minWidth: 0 }}>
           {ancestors.map(a => (
             <React.Fragment key={a.id}>
-              <span style={{ fontSize: 10, color: 'var(--text-darker,#3a2a18)' }}>{a.icon} {a.name}</span>
+              <span style={{ fontSize: 10, color: 'var(--text-darker,#2e2e2e)' }}>{a.icon} {a.name}</span>
               <Icon name="chevron_right" size={9} style={{ color: '#2a1a08', flexShrink: 0 }} />
             </React.Fragment>
           ))}
-          <span style={{ fontSize: 11, color: '#6a5a48' }}>{type?.icon} {type?.name}</span>
+          <span style={{ fontSize: 11, color: '#5a5a5a' }}>{type?.icon} {type?.name}</span>
         </div>
-        <button onClick={() => { if (confirm(`Supprimer "${card.name}" ?`)) { onDelete(card.id); onClose() } }}
+        <button onClick={() => setShowDeleteConfirm(true)}
           style={{ background: 'none', border: 'none', color: '#4a2a18', cursor: 'pointer', padding: '3px 5px', borderRadius: 4, fontSize: 11, display: 'flex', alignItems: 'center' }}
           onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
           onMouseLeave={e => e.currentTarget.style.color = '#4a2a18'}
@@ -80,9 +90,9 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
           <Icon name="trash" size={11} />
         </button>
         <button onClick={onClose}
-          style={{ background: 'none', border: 'none', color: 'var(--text-dark,#4a3a28)', cursor: 'pointer', padding: '3px 5px', borderRadius: 4, fontSize: 11, display: 'flex', alignItems: 'center' }}
-          onMouseEnter={e => e.currentTarget.style.color = '#c8b89a'}
-          onMouseLeave={e => e.currentTarget.style.color = '#4a3a28'}
+          style={{ background: 'none', border: 'none', color: 'var(--text-dark,#444444)', cursor: 'pointer', padding: '3px 5px', borderRadius: 4, fontSize: 11, display: 'flex', alignItems: 'center' }}
+          onMouseEnter={e => e.currentTarget.style.color = '#c0c0c0'}
+          onMouseLeave={e => e.currentTarget.style.color = '#444444'}
         >
           <Icon name="x" size={12} />
         </button>
@@ -96,10 +106,10 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
             <input
               value={card.name}
               onChange={e => upd({ name: e.target.value })}
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-primary,#f0e6d3)', fontSize: 22, fontFamily: "var(--font)", fontWeight: 600, width: '100%', outline: 'none', marginBottom: 10, letterSpacing: '-0.01em' }}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-primary,#f0f0f0)', fontSize: 22, fontFamily: "var(--font)", fontWeight: 600, width: '100%', outline: 'none', marginBottom: 10, letterSpacing: '-0.01em' }}
             />
             {type && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', background: (type.color || '#5a5040') + '18', border: `1px solid ${type.color || '#5a5040'}28`, borderRadius: 20, fontSize: 11, color: type.color || '#9a8a70', fontFamily: "var(--font-body)" }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', background: (type.color || '#5a5040') + '18', border: `1px solid ${type.color || '#5a5040'}28`, borderRadius: 20, fontSize: 11, color: type.color || '#8a8a8a', fontFamily: "var(--font-body)" }}>
                 {type.icon} {type.name}
               </span>
             )}
@@ -115,9 +125,9 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
               </div>
             ) : (
               <div onClick={() => fileRef.current?.click()}
-                style={{ width: 80, height: 80, borderRadius: 12, border: '1px dashed rgba(255,200,120,0.12)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer', color: 'var(--text-darker,#3a2a18)', fontSize: 10 }}
+                style={{ width: 80, height: 80, borderRadius: 12, border: '1px dashed rgba(255,200,120,0.12)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer', color: 'var(--text-darker,#2e2e2e)', fontSize: 10 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(200,160,100,0.35)'; e.currentTarget.style.color = '#c8a064' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,200,120,0.12)'; e.currentTarget.style.color = '#3a2a18' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,200,120,0.12)'; e.currentTarget.style.color = '#2e2e2e' }}
               >
                 <Icon name="image" size={18} /><span>Image</span>
               </div>
@@ -162,10 +172,18 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
                     onCreateCard={onCreateCard} allTypes={allTypes} calendars={calendars}
                     onRemoveProp={isExtra ? () => removeExtra(prop.id) : undefined}
                     displayName={nameOverrides[prop.id]}
+                    emojiOverride={emojiOverrides[prop.id] || prop.emoji}
                     onRename={name => renameProp(prop.id, name)}
                     onEditProp={patch => {
                       if (isExtra) {
                         upd({ extraProps: (card.extraProps || []).map(ep => ep.id === prop.id ? { ...ep, ...patch } : ep) })
+                      } else {
+                        if (patch.emoji !== undefined) {
+                          upd({ propEmojiOverrides: { ...(card.propEmojiOverrides || {}), [prop.id]: patch.emoji } })
+                        }
+                        if (patch.fieldType !== undefined) {
+                          upd({ propTypeOverrides: { ...(card.propTypeOverrides || {}), [prop.id]: { fieldType: patch.fieldType, targetTypeIds: patch.targetTypeIds } } })
+                        }
                       }
                     }}
                     isExtraProp={isExtra}
@@ -183,9 +201,9 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
             onCancel={() => setAddingExtraProp(false)}
           />
         ) : (
-          <button onClick={() => setAddingExtraProp(true)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 0', background: 'none', border: 'none', color: 'var(--text-darker,#3a2a18)', fontSize: 12, cursor: 'pointer', marginBottom: 18 }}
+          <button onClick={() => setAddingExtraProp(true)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 0', background: 'none', border: 'none', color: 'var(--text-darker,#2e2e2e)', fontSize: 12, cursor: 'pointer', marginBottom: 18 }}
             onMouseEnter={e => e.currentTarget.style.color = '#c8a064'}
-            onMouseLeave={e => e.currentTarget.style.color = '#3a2a18'}
+            onMouseLeave={e => e.currentTarget.style.color = '#2e2e2e'}
           >
             <Icon name="plus" size={11} /> Ajouter une propriété
           </button>
@@ -193,14 +211,23 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
 
         {/* Notes */}
         <div>
-          <div style={{ fontSize: 10, color: 'var(--text-darker,#3a2a18)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Texte</div>
+          <div style={{ fontSize: 10, color: 'var(--text-darker,#2e2e2e)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Texte</div>
           <textarea
             value={card.text || ''} onChange={e => upd({ text: e.target.value })}
             placeholder="Décrivez cet élément…" rows={5}
-            style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-muted,#9a8a78)', fontSize: 13, lineHeight: 1.85, resize: 'vertical', outline: 'none', fontFamily: "var(--font-body)" }}
+            style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-muted,#8a8a8a)', fontSize: 13, lineHeight: 1.85, resize: 'vertical', outline: 'none', fontFamily: "var(--font-body)" }}
           />
         </div>
       </div>
+
+      {showDeleteConfirm && (
+        <ConfirmModal
+          title="Supprimer cette carte ?"
+          message={`"${card.name}" sera supprimé définitivement.`}
+          onConfirm={() => { onDelete(card.id); onClose() }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
     </div>
   )
 }
@@ -215,7 +242,7 @@ function PropGroup({ children }) {
 }
 
 // ─── PropField ────────────────────────────────────────────────
-function PropField({ prop, value, onChange, cards, customTypes, onOpenCard, onCreateCard, allTypes, onRemoveProp, calendars, displayName, onRename, onEditProp, isExtraProp }) {
+function PropField({ prop, value, onChange, cards, customTypes, onOpenCard, onCreateCard, allTypes, onRemoveProp, calendars, displayName, emojiOverride, onRename, onEditProp, isExtraProp }) {
   const [addingRef, setAddingRef] = useState(false)
   const [hovered, setHovered] = useState(false)
   const [showEditor, setShowEditor] = useState(false)
@@ -235,7 +262,7 @@ function PropField({ prop, value, onChange, cards, customTypes, onOpenCard, onCr
             const rt = getType(rc.typeId, customTypes)
             return (
               <span key={rc.id} onClick={() => onOpenCard(rc.id)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 7px', background: (rt?.color || '#5a5040') + '18', border: `1px solid ${rt?.color || '#5a5040'}28`, borderRadius: 5, fontSize: 12, color: 'var(--text-primary,#e2d9c8)', cursor: 'pointer' }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 7px', background: (rt?.color || '#5a5040') + '18', border: `1px solid ${rt?.color || '#5a5040'}28`, borderRadius: 5, fontSize: 12, color: 'var(--text-primary,#f0f0f0)', cursor: 'pointer' }}>
                 {rc.image
                   ? <img src={rc.image} alt="" style={{ width: 13, height: 13, borderRadius: 2, objectFit: 'cover' }} />
                   : <span style={{ fontSize: 10 }}>{rt?.icon || '📄'}</span>}
@@ -257,7 +284,7 @@ function PropField({ prop, value, onChange, cards, customTypes, onOpenCard, onCr
             />
           ) : (
             <span onClick={() => setAddingRef(true)}
-              style={{ fontSize: 11, color: 'var(--text-darker,#3a2a18)', cursor: 'pointer', padding: '2px 6px', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: 4 }}>
+              style={{ fontSize: 11, color: 'var(--text-darker,#2e2e2e)', cursor: 'pointer', padding: '2px 6px', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: 4 }}>
               + Ajouter
             </span>
           )}
@@ -271,7 +298,7 @@ function PropField({ prop, value, onChange, cards, customTypes, onOpenCard, onCr
         return (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, padding: '4px 0', alignItems: 'center' }}>
             {items.map((item, i) => (
-              <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 7px', background: 'rgba(255,255,255,0.05)', borderRadius: 5, fontSize: 12, color: 'var(--text-secondary,#c8b89a)' }}>
+              <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 7px', background: 'rgba(255,255,255,0.05)', borderRadius: 5, fontSize: 12, color: 'var(--text-secondary,#c0c0c0)' }}>
                 {item}
                 <span onClick={() => onChange(items.filter((_, j) => j !== i))} style={{ opacity: 0.4, fontSize: 9, cursor: 'pointer' }}>✕</span>
               </span>
@@ -286,24 +313,36 @@ function PropField({ prop, value, onChange, cards, customTypes, onOpenCard, onCr
     if (prop.fieldType === FIELD_TYPES.DATE) {
       return <DateField value={value||''} onChange={onChange} calendars={calendars||[]} />
     }
-    return <span style={{ color: 'var(--text-darker,#3a2a18)', fontSize: 12 }}>—</span>
+    return <span style={{ color: 'var(--text-darker,#2e2e2e)', fontSize: 12 }}>—</span>
   }
 
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', minHeight: 34, borderBottom: '1px solid rgba(255,255,255,0.04)', position: 'relative' }}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       {/* Drag handle */}
-      <div style={{ width: 16, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch', cursor: 'grab', opacity: hovered ? 0.5 : 0, transition: 'opacity 0.12s', color: 'var(--text-dim,#5a4a38)', fontSize: 10, letterSpacing: '1px' }}>
+      <div style={{ width: 16, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch', cursor: 'grab', opacity: hovered ? 0.5 : 0, transition: 'opacity 0.12s', color: 'var(--text-dim,#5a5a5a)', fontSize: 10, letterSpacing: '1px' }}>
         <Icon name="drag" size={10} />
       </div>
-      <div style={{ width: 130, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '7px 4px 7px 0', color: 'var(--text-dim,#5a4a38)', fontSize: 12, position: 'relative' }}>
+      <div style={{ width: 130, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '7px 4px 7px 0', color: 'var(--text-dim,#5a5a5a)', fontSize: 12, position: 'relative' }}>
+        <span style={{ fontSize: 12, flexShrink: 0, width: 16, textAlign: 'center' }}>
+          {emojiOverride || (() => {
+            if (prop.fieldType === FIELD_TYPES.CARD_REF) {
+              const targetId = prop.targetTypeIds?.[0]
+              const targetType = targetId ? (allTypes || []).find(t => t.id === targetId) : null
+              return targetType?.icon || '🔗'
+            }
+            if (prop.fieldType === 'number') return '#'
+            if (prop.fieldType === 'date') return '📅'
+            return 'T'
+          })()}
+        </span>
         <span style={{ flex: 1, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
           onClick={() => { if (onRename || onRemoveProp) setShowEditor(true) }}>
           {displayName || prop.name}
         </span>
         {showEditor && (
           <PropEditorPopup
-            prop={prop}
+            prop={{ ...prop, emoji: emojiOverride || prop.emoji }}
             displayName={displayName || prop.name}
             onRename={onRename}
             onRemove={onRemoveProp}
@@ -357,8 +396,8 @@ function PropEditorPopup({ prop, displayName, onRename, onRemove, onEditProp, is
     { id: 'date', label: 'Date', icon: '📅' },
   ]
 
-  // Card types (non-virtual, root-level) as reference options
-  const cardTypes = (allTypes || []).filter(t => !t.virtual && !t.parentId)
+  // Card types (non-virtual, including subtypes) as reference options
+  const cardTypes = (allTypes || []).filter(t => !t.virtual)
 
   // Determine current display label
   const getCurrentTypeLabel = () => {
@@ -381,17 +420,17 @@ function PropEditorPopup({ prop, displayName, onRename, onRemove, onEditProp, is
 
   const selectEmoji = em => {
     setEmoji(em)
-    if (isExtraProp && onEditProp) onEditProp({ emoji: em })
+    if (onEditProp) onEditProp({ emoji: em })
     setShowEmojiPicker(false)
   }
 
   const changeToPrimitive = typeId => {
-    if (isExtraProp && onEditProp) onEditProp({ fieldType: typeId, targetTypeIds: undefined })
+    if (onEditProp) onEditProp({ fieldType: typeId, targetTypeIds: undefined })
     setShowTypeMenu(false)
   }
 
   const changeToCardRef = cardTypeId => {
-    if (isExtraProp && onEditProp) onEditProp({ fieldType: 'card_ref', targetTypeIds: [cardTypeId] })
+    if (onEditProp) onEditProp({ fieldType: 'card_ref', targetTypeIds: [cardTypeId] })
     setShowTypeMenu(false)
   }
 
@@ -418,7 +457,7 @@ function PropEditorPopup({ prop, displayName, onRename, onRemove, onEditProp, is
         <input autoFocus value={name} onChange={e => setName(e.target.value)}
           onBlur={commitName}
           onKeyDown={e => { if (e.key === 'Enter') { commitName(); onClose() } if (e.key === 'Escape') onClose() }}
-          style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 8px', color: 'var(--text-primary,#e2d9c8)', fontSize: 13, outline: 'none', fontFamily: "var(--font-body)" }}
+          style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 8px', color: 'var(--text-primary,#f0f0f0)', fontSize: 13, outline: 'none', fontFamily: "var(--font-body)" }}
         />
       </div>
 
@@ -427,7 +466,7 @@ function PropEditorPopup({ prop, displayName, onRename, onRemove, onEditProp, is
         <div style={{ padding: '8px 10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           <input value={emojiSearch} onChange={e => setEmojiSearch(e.target.value)}
             placeholder="Rechercher des icônes…"
-            style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 8px', color: 'var(--text-secondary,#c8b89a)', fontSize: 11, outline: 'none', marginBottom: 6, boxSizing: 'border-box' }}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 8px', color: 'var(--text-secondary,#c0c0c0)', fontSize: 11, outline: 'none', marginBottom: 6, boxSizing: 'border-box' }}
           />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 2, maxHeight: 140, overflowY: 'auto' }}>
             {filteredEmojis.map((em, i) => (
@@ -448,10 +487,10 @@ function PropEditorPopup({ prop, displayName, onRename, onRemove, onEditProp, is
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'background 0.1s' }}
           onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-          <span style={{ fontSize: 12, color: 'var(--text-dim,#5a4a38)' }}>Type</span>
-          <span style={{ fontSize: 12, color: '#8a7a68', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ fontSize: 12, color: 'var(--text-dim,#5a5a5a)' }}>Type</span>
+          <span style={{ fontSize: 12, color: '#8a8a8a', display: 'flex', alignItems: 'center', gap: 4 }}>
             {getCurrentTypeLabel()}
-            <Icon name="chevron_right" size={9} style={{ color: 'var(--text-dark,#4a3a28)' }} />
+            <Icon name="chevron_right" size={9} style={{ color: 'var(--text-dark,#444444)' }} />
           </span>
         </div>
 
@@ -472,16 +511,26 @@ function PropEditorPopup({ prop, displayName, onRename, onRemove, onEditProp, is
             {/* Separator */}
             {cardTypes.length > 0 && (
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '2px 0', padding: '4px 11px 2px' }}>
-                <span style={{ fontSize: 9, color: 'var(--text-darker,#3a2a18)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Types de cartes</span>
+                <span style={{ fontSize: 9, color: 'var(--text-darker,#2e2e2e)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Types de cartes</span>
               </div>
             )}
 
-            {/* Card types as reference targets */}
-            {cardTypes.map(ct => (
-              <TypeMenuItem key={ct.id} icon={ct.icon} label={ct.name}
-                active={isCurrentCardRef(ct.id)} onClick={() => changeToCardRef(ct.id)}
-                color={ct.color} />
-            ))}
+            {/* Card types as reference targets — grouped by parent */}
+            {cardTypes.filter(ct => !ct.parentId).map(ct => {
+              const children = cardTypes.filter(c => c.parentId === ct.id)
+              return (
+                <React.Fragment key={ct.id}>
+                  <TypeMenuItem icon={ct.icon} label={ct.name}
+                    active={isCurrentCardRef(ct.id)} onClick={() => changeToCardRef(ct.id)}
+                    color={ct.color} />
+                  {children.map(child => (
+                    <TypeMenuItem key={child.id} icon={child.icon} label={child.name}
+                      active={isCurrentCardRef(child.id)} onClick={() => changeToCardRef(child.id)}
+                      color={child.color} indent />
+                  ))}
+                </React.Fragment>
+              )
+            })}
           </div>
         )}
       </div>
@@ -500,12 +549,12 @@ function PropEditorPopup({ prop, displayName, onRename, onRemove, onEditProp, is
   )
 }
 
-function TypeMenuItem({ icon, label, active, onClick, color }) {
+function TypeMenuItem({ icon, label, active, onClick, color, indent }) {
   return (
     <div onClick={onClick}
       style={{
-        display: 'flex', alignItems: 'center', gap: 8, padding: '7px 11px', cursor: 'pointer', fontSize: 12,
-        color: active ? '#c8a064' : (color || '#9a8a70'),
+        display: 'flex', alignItems: 'center', gap: 8, padding: `7px 11px 7px ${indent ? 25 : 11}px`, cursor: 'pointer', fontSize: indent ? 11 : 12,
+        color: active ? '#c8a064' : (color || '#8a8a8a'),
         background: active ? 'rgba(200,160,100,0.1)' : 'transparent',
         transition: 'background 0.08s',
       }}
@@ -553,24 +602,24 @@ function CardRefPicker({ eligibleCards, targetTypeIds, customTypes, allTypes, on
       <div style={{ padding: '7px 9px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Rechercher…"
-          style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 9px', color: 'var(--text-primary,#e2d9c8)', fontSize: 12, outline: 'none' }}
+          style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 9px', color: 'var(--text-primary,#f0f0f0)', fontSize: 12, outline: 'none' }}
         />
       </div>
       <div style={{ maxHeight: 200, overflowY: 'auto' }}>
         {filtered.length === 0 && !searchTrim && (
-          <div style={{ padding: '10px 14px', color: 'var(--text-darker,#3a2a18)', fontSize: 12 }}>Aucune carte disponible</div>
+          <div style={{ padding: '10px 14px', color: 'var(--text-darker,#2e2e2e)', fontSize: 12 }}>Aucune carte disponible</div>
         )}
         {filtered.map(c => {
           const t = getType(c.typeId, customTypes)
           return (
             <div key={c.id} onClick={() => onSelect(c.id)}
-              style={{ padding: '7px 13px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'var(--text-secondary,#c8b89a)' }}
+              style={{ padding: '7px 13px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'var(--text-secondary,#c0c0c0)' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               {c.image ? <img src={c.image} alt="" style={{ width: 16, height: 16, borderRadius: 3, objectFit: 'cover' }} /> : <span style={{ fontSize: 12 }}>{t?.icon || '📄'}</span>}
               <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
-              {t && <span style={{ fontSize: 10, color: t.color || '#5a4a38', opacity: 0.7 }}>{t.name}</span>}
+              {t && <span style={{ fontSize: 10, color: t.color || '#5a5a5a', opacity: 0.7 }}>{t.name}</span>}
             </div>
           )
         })}
@@ -578,11 +627,11 @@ function CardRefPicker({ eligibleCards, targetTypeIds, customTypes, allTypes, on
       {/* Quick create */}
       {quickCreateTypes.length > 0 && (
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '7px 9px' }}>
-          <div style={{ fontSize: 10, color: 'var(--text-darker,#3a2a18)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Créer</div>
+          <div style={{ fontSize: 10, color: 'var(--text-darker,#2e2e2e)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Créer</div>
           {quickCreateTypes.map(t => (
             <button key={t.id}
               onClick={() => handleQuickCreate(t.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '5px 6px', background: 'none', border: 'none', borderRadius: 5, color: t.color || '#9a8a70', fontSize: 12, cursor: 'pointer', textAlign: 'left' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '5px 6px', background: 'none', border: 'none', borderRadius: 5, color: t.color || '#8a8a8a', fontSize: 12, cursor: 'pointer', textAlign: 'left' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
               onMouseLeave={e => e.currentTarget.style.background = 'none'}
             >
@@ -633,15 +682,15 @@ function DateField({ value, onChange, calendars }) {
 
   return (
     <div style={{ position:'relative' }}>
-      <button onClick={() => setOpen(!open)} style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:6, padding:'4px 10px', color:'#c8b89a', fontSize:12, cursor:'pointer', outline:'none' }}>
+      <button onClick={() => setOpen(!open)} style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:6, padding:'4px 10px', color:'#c0c0c0', fontSize:12, cursor:'pointer', outline:'none' }}>
         {display()}
       </button>
       {open && (
         <div style={{ position:'absolute', top:'100%', left:0, zIndex:200, marginTop:4, background:'rgba(8,4,0,0.85)', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid rgba(200,160,100,0.14)', borderRadius:14, padding:14, minWidth:260, boxShadow:'0 8px 32px rgba(0,0,0,0.7)' }}>
           <div style={{ marginBottom:10 }}>
-            <div style={{ fontSize:10, color:'#3a2a18', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Calendrier</div>
+            <div style={{ fontSize:10, color:'#2e2e2e', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Calendrier</div>
             <select value={mode} onChange={e => { setMode(e.target.value); setYear('1'); setMonth('1'); setDay('1') }}
-              style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:6, padding:'5px 8px', color:'#c8b89a', fontSize:12, outline:'none' }}>
+              style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:6, padding:'5px 8px', color:'#c0c0c0', fontSize:12, outline:'none' }}>
               <option value="real">Grégorien</option>
               {calendars.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
@@ -649,30 +698,30 @@ function DateField({ value, onChange, calendars }) {
           {mode === 'real' ? (
             <>
               <input type="date" defaultValue={isCalDate ? '' : value} onChange={e => applyReal(e.target.value)}
-                style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:6, padding:'5px 8px', color:'#c8b89a', fontSize:12, outline:'none', colorScheme:'dark' }} />
-              <button onClick={() => setOpen(false)} style={{ marginTop:8, background:'none', border:'none', color:'#4a3a28', cursor:'pointer', fontSize:11 }}>Annuler</button>
+                style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:6, padding:'5px 8px', color:'#c0c0c0', fontSize:12, outline:'none', colorScheme:'dark' }} />
+              <button onClick={() => setOpen(false)} style={{ marginTop:8, background:'none', border:'none', color:'#444444', cursor:'pointer', fontSize:11 }}>Annuler</button>
             </>
           ) : (
             <>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6, marginBottom:10 }}>
                 <div>
-                  <div style={{ fontSize:10, color:'#4a3a28', marginBottom:4 }}>Jour</div>
-                  <input type="number" min={1} max={30} value={day} onChange={e=>setDay(e.target.value)} style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:6, padding:'5px 7px', color:'#c8b89a', fontSize:12, outline:'none' }} />
+                  <div style={{ fontSize:10, color:'#444444', marginBottom:4 }}>Jour</div>
+                  <input type="number" min={1} max={30} value={day} onChange={e=>setDay(e.target.value)} style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:6, padding:'5px 7px', color:'#c0c0c0', fontSize:12, outline:'none' }} />
                 </div>
                 <div>
-                  <div style={{ fontSize:10, color:'#4a3a28', marginBottom:4 }}>Mois</div>
-                  <select value={month} onChange={e=>setMonth(e.target.value)} style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:6, padding:'5px 4px', color:'#c8b89a', fontSize:12, outline:'none' }}>
+                  <div style={{ fontSize:10, color:'#444444', marginBottom:4 }}>Mois</div>
+                  <select value={month} onChange={e=>setMonth(e.target.value)} style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:6, padding:'5px 4px', color:'#c0c0c0', fontSize:12, outline:'none' }}>
                     {monthNames.map((m,i) => <option key={i} value={i+1}>{m}</option>)}
                   </select>
                 </div>
                 <div>
-                  <div style={{ fontSize:10, color:'#4a3a28', marginBottom:4 }}>Année</div>
-                  <input type="number" min={1} value={year} onChange={e=>setYear(e.target.value)} style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:6, padding:'5px 7px', color:'#c8b89a', fontSize:12, outline:'none' }} />
+                  <div style={{ fontSize:10, color:'#444444', marginBottom:4 }}>Année</div>
+                  <input type="number" min={1} value={year} onChange={e=>setYear(e.target.value)} style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:6, padding:'5px 7px', color:'#c0c0c0', fontSize:12, outline:'none' }} />
                 </div>
               </div>
               <div style={{ display:'flex', gap:8 }}>
                 <button onClick={applyCalDate} style={{ flex:1, background:'rgba(200,160,100,0.12)', border:'1px solid rgba(200,160,100,0.3)', borderRadius:6, padding:'6px', color:'var(--accent,#c8a064)', fontSize:12, cursor:'pointer' }}>Valider</button>
-                <button onClick={() => setOpen(false)} style={{ background:'none', border:'none', color:'#4a3a28', cursor:'pointer', fontSize:11 }}>Annuler</button>
+                <button onClick={() => setOpen(false)} style={{ background:'none', border:'none', color:'#444444', cursor:'pointer', fontSize:11 }}>Annuler</button>
               </div>
             </>
           )}
@@ -692,11 +741,11 @@ function InlineAddText({ onAdd, placeholder }) {
     <input autoFocus value={val} onChange={e => setVal(e.target.value)}
       onKeyDown={e => { if (e.key === 'Enter' && val.trim()) { onAdd(val.trim()); setVal(''); setEditing(false) } if (e.key === 'Escape') { setVal(''); setEditing(false) } }}
       onBlur={() => { if (val.trim()) onAdd(val.trim()); setVal(''); setEditing(false) }}
-      style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(200,160,100,0.3)', borderRadius: 5, padding: '2px 7px', color: 'var(--text-primary,#e2d9c8)', fontSize: 12, outline: 'none', width: 80 }}
+      style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(200,160,100,0.3)', borderRadius: 5, padding: '2px 7px', color: 'var(--text-primary,#f0f0f0)', fontSize: 12, outline: 'none', width: 80 }}
     />
   )
   return (
-    <span onClick={() => setEditing(true)} style={{ fontSize: 11, color: 'var(--text-darker,#3a2a18)', cursor: 'pointer', padding: '2px 6px', border: '1px dashed rgba(255,255,255,0.07)', borderRadius: 4 }}>
+    <span onClick={() => setEditing(true)} style={{ fontSize: 11, color: 'var(--text-darker,#2e2e2e)', cursor: 'pointer', padding: '2px 6px', border: '1px dashed rgba(255,255,255,0.07)', borderRadius: 4 }}>
       {placeholder}
     </span>
   )

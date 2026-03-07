@@ -35,8 +35,12 @@ export default function App() {
           folders, createFolder, updateFolder, deleteFolder,
           calendars, createCalendar, updateCalendar, deleteCalendar } = store
 
-  const [openCardIds, setOpenCardIds] = useState([])
-  const [activeView,  setActiveView]  = useState('mondes')
+  const [openCardIds, setOpenCardIds] = useState(() => {
+    try { const v = localStorage.getItem('wf_open_cards'); return v ? JSON.parse(v) : [] } catch { return [] }
+  })
+  const [activeView,  setActiveView]  = useState(() => {
+    try { return localStorage.getItem('wf_active_view') || 'mondes' } catch { return 'mondes' }
+  })
   const [showTypes,   setShowTypes]   = useState(false)
   const [showWorldSelector, setShowWorldSelector] = useState(false)
   const allTypes = [...BUILTIN_TYPES, ...customTypes]
@@ -45,13 +49,19 @@ export default function App() {
     setOpenCardIds(prev => {
       if (prev.includes(id)) return prev
       const next = [...prev, id]
-      return next.length > MAX_OPEN ? next.slice(-MAX_OPEN) : next
+      const result = next.length > MAX_OPEN ? next.slice(-MAX_OPEN) : next
+      try { localStorage.setItem('wf_open_cards', JSON.stringify(result)) } catch {}
+      return result
     })
     setActiveView('mondes')
   }, [])
 
   const closeCard = useCallback(id => {
-    setOpenCardIds(prev => prev.filter(x => x !== id))
+    setOpenCardIds(prev => {
+      const next = prev.filter(x => x !== id)
+      try { localStorage.setItem('wf_open_cards', JSON.stringify(next)) } catch {}
+      return next
+    })
   }, [])
 
   const handleCreate = useCallback(typeId => {
@@ -63,6 +73,7 @@ export default function App() {
   // Preserve open cards when switching tabs
   const handleSetView = useCallback(v => {
     setActiveView(v)
+    try { localStorage.setItem('wf_active_view', v) } catch {}
   }, [])
 
   const handleUpdateType = useCallback((typeId, patch) => {
@@ -76,6 +87,7 @@ export default function App() {
   const handleSwitchWorld = useCallback((worldId) => {
     setActiveWorldId(worldId)
     setOpenCardIds([])
+    try { localStorage.setItem('wf_open_cards', '[]') } catch {}
     setShowWorldSelector(false)
   }, [setActiveWorldId])
 
@@ -99,7 +111,8 @@ export default function App() {
   const colorMode = world.colorMode || 'night'
   const sysDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
   const isDark = colorMode === 'night' || (colorMode === 'smart' && sysDark)
-  const bgBrightness = isDark ? (world.bgBrightness ?? 0.45) : Math.min((world.bgBrightness ?? 0.45) + 0.25, 0.8)
+  const baseBrightness = world.bgBrightness ?? 0.45
+  const bgBrightness = isDark ? Math.max(baseBrightness - 0.1, 0.1) : Math.min(baseBrightness + 0.2, 0.85)
 
   // Apply CSS custom properties for the active theme
   const themeVars = {
@@ -135,10 +148,10 @@ export default function App() {
       {bg ? (
         <>
           <div style={{ position:'fixed', inset:0, zIndex:0, backgroundImage:`url(${bg})`, backgroundSize:'cover', backgroundPosition:'center', filter:`blur(8px) brightness(${bgBrightness})`, transform:'scale(1.08)' }} />
-          <div style={{ position:'fixed', inset:0, zIndex:0, background: theme.bgBase + '0.35)' }} />
+          <div style={{ position:'fixed', inset:0, zIndex:0, background: theme.bgBase + (isDark ? '0.35)' : '0.15)') }} />
         </>
       ) : (
-        <div style={{ position:'fixed', inset:0, zIndex:0, background: theme.defaultBg }} />
+        <div style={{ position:'fixed', inset:0, zIndex:0, background: isDark ? theme.defaultBg : `linear-gradient(145deg, rgba(40,35,28,0.9), rgba(25,22,18,0.95))` }} />
       )}
 
       <div style={{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', height:'100vh', padding:8, gap:8 }}>
@@ -146,21 +159,31 @@ export default function App() {
           onWorldSelect={() => setShowWorldSelector(true)} theme={theme} />
 
         <div style={{ flex:1, display:'flex', overflow:'hidden', gap:8 }}>
-          {inMondes && (
+          <div style={{ display: inMondes ? 'flex' : 'none', flexShrink: 0 }}>
             <Sidebar cards={cards} folders={folders} customTypes={customTypes} openCardIds={openCardIds}
               onOpenCard={openCard} onCreateCard={handleCreate}
               onCreateFolder={createFolder} onUpdateFolder={updateFolder} onDeleteFolder={deleteFolder}
               onUpdateCard={updateCard} onDeleteCard={deleteCard} onDuplicateCard={duplicateCard}
               onShowTypes={() => setShowTypes(v => !v)} showTypes={showTypes} theme={theme}
             />
-          )}
+          </div>
 
           <div style={{ flex:1, display:'flex', overflow:'hidden', minWidth:0, gap:8 }}>
-            {activeView==='home'      && <HomeView world={world} setWorld={setWorld} cards={cards} customTypes={customTypes} onOpenCard={openCard} onCreateCard={handleCreate} />}
-            {activeView==='documents' && <CharactersView cards={cards} customTypes={customTypes} onOpenCard={openCard} onCreateCard={handleCreate} />}
-            {activeView==='graph'    && <GraphView    cards={cards} customTypes={customTypes} onOpenCard={openCard} />}
-            {activeView==='timeline' && <TimelineView cards={cards} customTypes={customTypes} calendars={calendars} onOpenCard={openCard} />}
-            {activeView==='charts'   && <ChartsView   cards={cards} customTypes={customTypes} />}
+            <div style={{ flex:1, display: activeView==='home' ? 'flex' : 'none', overflow:'hidden', minWidth:0 }}>
+              <HomeView world={world} setWorld={setWorld} cards={cards} customTypes={customTypes} onOpenCard={openCard} onCreateCard={handleCreate} onShowTypes={() => setShowTypes(true)} />
+            </div>
+            <div style={{ flex:1, display: activeView==='documents' ? 'flex' : 'none', overflow:'hidden', minWidth:0 }}>
+              <CharactersView cards={cards} customTypes={customTypes} onOpenCard={openCard} onCreateCard={handleCreate} />
+            </div>
+            <div style={{ flex:1, display: activeView==='graph' ? 'flex' : 'none', overflow:'hidden', minWidth:0 }}>
+              <GraphView cards={cards} customTypes={customTypes} onOpenCard={openCard} />
+            </div>
+            <div style={{ flex:1, display: activeView==='timeline' ? 'flex' : 'none', overflow:'hidden', minWidth:0 }}>
+              <TimelineView cards={cards} customTypes={customTypes} calendars={calendars} onOpenCard={openCard} />
+            </div>
+            <div style={{ flex:1, display: activeView==='charts' ? 'flex' : 'none', overflow:'hidden', minWidth:0 }}>
+              <ChartsView cards={cards} customTypes={customTypes} />
+            </div>
 
             {inMondes && (
               openCardIds.length === 0
@@ -172,7 +195,7 @@ export default function App() {
                       const card = cards.find(c => c.id === cid)
                       if (!card) return null
                       const cardType = allTypes.find(t => t.id === card.typeId)
-                      const containerStyle = { flex:1, minWidth:300, maxWidth: openCardIds.length===1 ? '100%' : 560, height:'100%', overflow:'hidden', background: theme.bgPanel + '0.55)', backdropFilter:'blur(40px) saturate(1.4)', WebkitBackdropFilter:'blur(40px) saturate(1.4)', borderRadius:16, border:`1px solid ${theme.borderColor}0.1)` }
+                      const containerStyle = { flex:1, minWidth:300, height:'100%', overflow:'hidden', background: theme.bgPanel + '0.55)', backdropFilter:'blur(40px) saturate(1.4)', WebkitBackdropFilter:'blur(40px) saturate(1.4)', borderRadius:16, border:`1px solid ${theme.borderColor}0.1)` }
                       const commonProps = { card, cards, customTypes, allTypes, onUpdate: updateCard, onDelete: id => { deleteCard(id); closeCard(id) }, onClose: () => closeCard(cid), onOpenCard: openCard, onCreateCard: handleCreate }
                       if (cardType?.viewMode === 'canvas') return <div key={cid} style={containerStyle}><CanvasView {...commonProps} /></div>
                       if (cardType?.viewMode === 'family_tree') return <div key={cid} style={containerStyle}><FamilyTreeView {...commonProps} /></div>
@@ -209,6 +232,9 @@ export default function App() {
 
 // ─── World Selector ──────────────────────────────────────────
 function WorldSelector({ worlds, activeWorldId, onSelect, onClose, onCreate, onDelete }) {
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const worldToDelete = confirmDeleteId ? worlds.find(w => w.id === confirmDeleteId) : null
+
   return (
     <div onClick={e => { if (e.target === e.currentTarget) onClose() }}
       style={{ position:'fixed', inset:0, zIndex:900, background:'rgba(0,0,0,0.7)', backdropFilter:'blur(20px)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:24 }}>
@@ -229,13 +255,13 @@ function WorldSelector({ worlds, activeWorldId, onSelect, onClose, onCreate, onD
               : <div style={{ width:40, height:40, borderRadius:8, background:'var(--accent-15,rgba(200,160,100,0.15))', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>✦</div>
             }
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:15, fontWeight:600, color:'var(--text-primary,#f0e6d3)', fontFamily:"var(--font)" }}>{w.name}</div>
-              <div style={{ fontSize:11, color:'var(--text-dim,#5a4a38)', marginTop:2 }}>{w.id === activeWorldId ? 'Monde actif' : ''}</div>
+              <div style={{ fontSize:15, fontWeight:600, color:'var(--text-primary,#f0f0f0)', fontFamily:"var(--font)" }}>{w.name}</div>
+              <div style={{ fontSize:11, color:'var(--text-dim,#5a5a5a)', marginTop:2 }}>{w.id === activeWorldId ? 'Monde actif' : ''}</div>
             </div>
             {worlds.length > 1 && (
-              <button onClick={e => { e.stopPropagation(); if (confirm(`Supprimer "${w.name}" ?`)) onDelete(w.id) }}
-                style={{ background:'none', border:'none', color:'var(--text-darker,#3a2a18)', cursor:'pointer', padding:4 }}
-                onMouseEnter={e => e.currentTarget.style.color='#e05040'} onMouseLeave={e => e.currentTarget.style.color='var(--text-darker,#3a2a18)'}>
+              <button onClick={e => { e.stopPropagation(); setConfirmDeleteId(w.id) }}
+                style={{ background:'none', border:'none', color:'var(--text-darker,#2e2e2e)', cursor:'pointer', padding:4 }}
+                onMouseEnter={e => e.currentTarget.style.color='#e05040'} onMouseLeave={e => e.currentTarget.style.color='var(--text-darker,#2e2e2e)'}>
                 <Icon name="trash" size={13} />
               </button>
             )}
@@ -252,6 +278,30 @@ function WorldSelector({ worlds, activeWorldId, onSelect, onClose, onCreate, onD
         onMouseLeave={e => e.currentTarget.style.background='var(--accent-10,rgba(200,160,100,0.1))'}>
         <Icon name="plus" size={14} /> Créer un nouveau monde
       </button>
+
+      {/* Delete confirmation modal */}
+      {worldToDelete && (
+        <div onClick={e => e.stopPropagation()} style={{
+          position:'fixed', inset:0, zIndex:910, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center',
+        }}>
+          <div style={{ background:'rgba(12,8,2,0.95)', backdropFilter:'blur(40px)', border:'1px solid rgba(255,200,120,0.14)', borderRadius:16, padding:'28px 32px', width:340, boxShadow:'0 16px 48px rgba(0,0,0,0.7)' }}>
+            <div style={{ fontSize:15, fontWeight:600, color:'var(--text-primary,#f0f0f0)', marginBottom:10, fontFamily:'var(--font)' }}>Supprimer ce monde ?</div>
+            <p style={{ fontSize:13, color:'var(--text-dim,#5a5a5a)', lineHeight:1.5, marginBottom:20 }}>
+              Le monde <strong style={{ color:'var(--text-secondary,#c0c0c0)' }}>"{worldToDelete.name}"</strong> et toutes ses données seront supprimés. Cette action est irréversible.
+            </p>
+            <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+              <button onClick={() => setConfirmDeleteId(null)}
+                style={{ padding:'8px 16px', borderRadius:8, border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.05)', color:'var(--text-muted,#8a8a8a)', fontSize:12, cursor:'pointer' }}>
+                Annuler
+              </button>
+              <button onClick={() => { onDelete(confirmDeleteId); setConfirmDeleteId(null) }}
+                style={{ padding:'8px 16px', borderRadius:8, border:'1px solid rgba(239,68,68,0.3)', background:'rgba(239,68,68,0.12)', color:'#ef4444', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -307,27 +357,28 @@ function MondesHome({ world, setWorld, cards, allTypes, theme, calendars, create
 }
 
 function TopBar({ world, activeView, onSetView, cardCount, onWorldSelect, theme }) {
+  const pillStyle = { height:36, display:'flex', alignItems:'center', background: theme.bgBase + '0.55)', backdropFilter:'blur(40px) saturate(1.6)', WebkitBackdropFilter:'blur(40px) saturate(1.6)', borderRadius:12, border:`1px solid ${theme.borderColor}0.09)` }
   return (
-    <div style={{ height:48, display:'flex', alignItems:'center', padding:'0 18px', background: theme.bgBase + '0.6)', backdropFilter:'blur(40px) saturate(1.6)', WebkitBackdropFilter:'blur(40px) saturate(1.6)', borderRadius:16, border:`1px solid ${theme.borderColor}0.09)`, flexShrink:0, position:'relative' }}>
-      <div onClick={onWorldSelect} style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0, cursor:'pointer' }}
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, gap:12 }}>
+      <div onClick={onWorldSelect} style={{ ...pillStyle, gap:8, padding:'0 14px', cursor:'pointer', flexShrink:0 }}
         title="Changer de monde">
-        <div style={{ width:26, height:26, borderRadius:8, background:`linear-gradient(135deg,${theme.accent}55,${theme.accent}18)`, border:`1px solid ${theme.accent}28`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11 }}>✦</div>
-        <span style={{ fontFamily: theme.font, fontSize:13, fontWeight:600, color: theme.textSecondary }}>{world.name||'Mon Monde'}</span>
+        <div style={{ width:22, height:22, borderRadius:7, background:`linear-gradient(135deg,${theme.accent}55,${theme.accent}18)`, border:`1px solid ${theme.accent}28`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10 }}>✦</div>
+        <span style={{ fontFamily: theme.font, fontSize:12, fontWeight:600, color: theme.textSecondary }}>{world.name||'Mon Monde'}</span>
       </div>
-      <div style={{ position:'absolute', left:'50%', transform:'translateX(-50%)', display:'flex', gap:2, background:'rgba(255,255,255,0.05)', borderRadius:12, padding:'4px 5px', border:'1px solid rgba(255,255,255,0.07)' }}>
+      <div style={{ ...pillStyle, gap:1, padding:'0 4px' }}>
         {NAV.map(n => {
           const active = activeView===n.id
           return (
-            <button key={n.id} onClick={() => onSetView(n.id)} style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 13px', borderRadius:9, border:'none', background: active ? theme.accentLight + '0.18)' : 'transparent', color: active ? theme.accent : theme.textDark, fontSize:12, cursor:'pointer', transition:'all 0.12s' }}
-              onMouseEnter={e => { if(!active) e.currentTarget.style.color=theme.textMuted }}
-              onMouseLeave={e => { if(!active) e.currentTarget.style.color=theme.textDark }}>
+            <button key={n.id} onClick={() => onSetView(n.id)} style={{ display:'flex', alignItems:'center', gap:5, padding: active ? '5px 12px' : '5px 9px', borderRadius:9, border:'none', background: active ? theme.accentLight + '0.18)' : 'transparent', color: active ? theme.accent : 'rgba(255,255,255,0.7)', fontSize:12, cursor:'pointer', transition:'all 0.15s' }}
+              onMouseEnter={e => { if(!active) e.currentTarget.style.color='rgba(255,255,255,0.95)' }}
+              onMouseLeave={e => { if(!active) e.currentTarget.style.color='rgba(255,255,255,0.7)' }}>
               <Icon name={n.icon} size={13} />
-              <span style={{ fontFamily: theme.fontBody }}>{n.label}</span>
+              {active && <span style={{ fontFamily: theme.fontBody }}>{n.label}</span>}
             </button>
           )
         })}
       </div>
-      <div style={{ marginLeft:'auto' }}>
+      <div style={{ ...pillStyle, padding:'0 14px', flexShrink:0 }}>
         <span style={{ fontSize:11, color: theme.textDarker }}>{cardCount} doc{cardCount!==1?'s':''}</span>
       </div>
     </div>

@@ -48,12 +48,24 @@ export default function ChartsView({ cards, customTypes }) {
     }
   }, [cardsWithStats.length])
 
+  const statKeyLabels = useMemo(() => {
+    const labels = {}
+    cards.forEach(c => {
+      const defs = getEffectiveProps(c.typeId, customTypes)
+      defs.forEach(p => { if (!labels[p.id]) labels[p.id] = p.name })
+      ;(c.extraProps||[]).forEach(ep => { const k = ep.name||ep.id; if (!labels[k]) labels[k] = ep.name||ep.id })
+    })
+    return labels
+  }, [cards, customTypes])
+
+  const statLabel = k => statKeyLabels[k] || k
+
   const allStatKeys = useMemo(() => {
     const keys = new Set()
     const targets = selectedCardIds.length > 0 ? cards.filter(c => selectedCardIds.includes(c.id)) : cards
     targets.forEach(c => Object.keys(getNumericProps(c, getEffectiveProps(c.typeId, customTypes))).forEach(k => keys.add(k)))
     return [...keys]
-  }, [cards, selectedCardIds])
+  }, [cards, selectedCardIds, customTypes])
 
   const activeStats = selectedStats.length > 0 ? selectedStats : allStatKeys.slice(0,6)
   const toggleCard = id => setSelectedCardIds(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev,id])
@@ -75,16 +87,16 @@ export default function ChartsView({ cards, customTypes }) {
       {/* Left */}
       <div style={{ width:240, flexShrink:0, borderRight:'1px solid rgba(255,255,255,0.07)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
         <div style={{ padding:'12px 12px 8px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ fontSize:12, color:'var(--text-muted,#7a6a58)', marginBottom:8, fontFamily:"var(--font)" }}>Cartes</div>
+          <div style={{ fontSize:12, color:'var(--text-muted,#8a8a8a)', marginBottom:8, fontFamily:"var(--font)" }}>Cartes</div>
           <div style={{ position:'relative' }}>
-            <Icon name="search" size={11} style={{ position:'absolute', left:8, top:'50%', transform:'translateY(-50%)', color:'var(--text-dark,#4a3a28)' }} />
+            <Icon name="search" size={11} style={{ position:'absolute', left:8, top:'50%', transform:'translateY(-50%)', color:'var(--text-dark,#444444)' }} />
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Filtrer…"
-              style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'none', borderRadius:6, padding:'5px 8px 5px 24px', color:'var(--text-secondary,#c8b89a)', fontSize:11, outline:'none' }} />
+              style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'none', borderRadius:6, padding:'5px 8px 5px 24px', color:'var(--text-secondary,#c0c0c0)', fontSize:11, outline:'none' }} />
           </div>
         </div>
         <div style={{ flex:1, overflow:'auto', padding:'6px 8px' }}>
           {visibleCards.length === 0 && (
-            <p style={{ color:'var(--text-darker,#3a2a18)', fontSize:12, padding:'10px 6px' }}>Aucune carte avec stats numériques</p>
+            <p style={{ color:'var(--text-darker,#2e2e2e)', fontSize:12, padding:'10px 6px' }}>Aucune carte avec stats numériques</p>
           )}
           {visibleCards.map((card, i) => {
             const isSel = selectedCardIds.includes(card.id)
@@ -98,7 +110,7 @@ export default function ChartsView({ cards, customTypes }) {
                 {isSel && <div style={{ width:8, height:8, borderRadius:'50%', background:color, flexShrink:0 }} />}
                 {card.image ? <img src={card.image} alt="" style={{ width:22, height:22, borderRadius:5, objectFit:'cover', flexShrink:0 }} />
                   : <span style={{ fontSize:14, width:22, textAlign:'center', flexShrink:0 }}>{type?.icon||'📄'}</span>}
-                <span style={{ fontSize:12, color: isSel?'var(--text-primary,#f0e6d3)':'var(--text-muted,#9a8a70)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{card.name}</span>
+                <span style={{ fontSize:12, color: isSel?'var(--text-primary,#f0f0f0)':'var(--text-muted,#8a8a8a)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{card.name}</span>
               </div>
             )
           })}
@@ -106,12 +118,12 @@ export default function ChartsView({ cards, customTypes }) {
 
         {allStatKeys.length > 0 && (
           <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', padding:'10px 12px' }}>
-            <div style={{ fontSize:11, color:'var(--text-dim,#5a4a38)', marginBottom:8 }}>Statistiques</div>
+            <div style={{ fontSize:11, color:'var(--text-dim,#5a5a5a)', marginBottom:8 }}>Statistiques</div>
             <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
               {allStatKeys.map(k => (
-                <label key={k} style={{ display:'flex', alignItems:'center', gap:7, cursor:'pointer', fontSize:12, color: activeStats.includes(k)?'#c8b89a':'#5a4a38' }}>
+                <label key={k} style={{ display:'flex', alignItems:'center', gap:7, cursor:'pointer', fontSize:12, color: activeStats.includes(k)?'#c0c0c0':'#5a5a5a' }}>
                   <input type="checkbox" checked={activeStats.includes(k)} onChange={() => toggleStat(k)} style={{ accentColor:'var(--accent,#c8a064)' }} />
-                  {k}
+                  {statLabel(k)}
                 </label>
               ))}
             </div>
@@ -122,7 +134,7 @@ export default function ChartsView({ cards, customTypes }) {
       {/* Right: chart */}
       <div style={{ flex:1, overflow:'auto', padding:'24px 32px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-          <h2 style={{ fontFamily:"var(--font)", fontSize:22, color:'var(--text-primary,#f0e6d3)', fontWeight:500 }}>Graphiques</h2>
+          <h2 style={{ fontFamily:"var(--font)", fontSize:22, color:'var(--text-primary,#f0f0f0)', fontWeight:500 }}>Graphiques</h2>
           <div style={{ display:'flex', gap:8 }}>
             <Btn variant={chartType==='radar'?'active':'subtle'} size="sm" onClick={() => setChartType('radar')}>Radar</Btn>
             <Btn variant={chartType==='bar'?'active':'subtle'} size="sm" onClick={() => setChartType('bar')}>Barres</Btn>
@@ -130,13 +142,13 @@ export default function ChartsView({ cards, customTypes }) {
         </div>
 
         {allStatKeys.length === 0 ? (
-          <div style={{ textAlign:'center', paddingTop:80, color:'var(--text-darker,#3a2a18)' }}>
+          <div style={{ textAlign:'center', paddingTop:80, color:'var(--text-darker,#2e2e2e)' }}>
             <Icon name="chart" size={44} style={{ opacity:0.1, marginBottom:14 }} />
             <p style={{ fontSize:15, marginBottom:8 }}>Aucune statistique numérique</p>
             <p style={{ fontSize:12 }}>Ajoutez des propriétés Numérique à vos cartes.</p>
           </div>
         ) : chartData.length === 0 ? (
-          <div style={{ textAlign:'center', paddingTop:60, color:'var(--text-darker,#3a2a18)', fontSize:14 }}>Sélectionnez des cartes à gauche</div>
+          <div style={{ textAlign:'center', paddingTop:60, color:'var(--text-darker,#2e2e2e)', fontSize:14 }}>Sélectionnez des cartes à gauche</div>
         ) : (
           <>
             <div style={{ display:'flex', gap:12, flexWrap:'wrap', marginBottom:24 }}>
@@ -144,11 +156,11 @@ export default function ChartsView({ cards, customTypes }) {
                 <div key={card.id} style={{ display:'flex', alignItems:'center', gap:7 }}>
                   {card.image && <img src={card.image} alt="" style={{ width:20, height:20, borderRadius:4, objectFit:'cover' }} />}
                   <div style={{ width:10, height:10, borderRadius:'50%', background:color }} />
-                  <span style={{ fontSize:13, color:'var(--text-secondary,#c8b89a)' }}>{card.name}</span>
+                  <span style={{ fontSize:13, color:'var(--text-secondary,#c0c0c0)' }}>{card.name}</span>
                 </div>
               ))}
             </div>
-            {chartType==='radar' ? <RadarChart data={chartData} stats={activeStats} /> : <BarChart data={chartData} stats={activeStats} />}
+            {chartType==='radar' ? <RadarChart data={chartData} stats={activeStats} statLabel={statLabel} /> : <BarChart data={chartData} stats={activeStats} statLabel={statLabel} />}
           </>
         )}
       </div>
@@ -156,8 +168,8 @@ export default function ChartsView({ cards, customTypes }) {
   )
 }
 
-function RadarChart({ data, stats }) {
-  if (stats.length < 3) return <p style={{ color:'var(--text-dim,#5a4a38)', fontSize:13 }}>Sélectionnez au moins 3 statistiques.</p>
+function RadarChart({ data, stats, statLabel }) {
+  if (stats.length < 3) return <p style={{ color:'var(--text-dim,#5a5a5a)', fontSize:13 }}>Sélectionnez au moins 3 statistiques.</p>
   const SIZE=500, cx=250, cy=250, r=SIZE*0.32, labelR=SIZE*0.43, n=stats.length
   const angle = i => (i/n)*Math.PI*2 - Math.PI/2
   const globalMax = Math.max(1, ...data.flatMap(d => d.stats.map(s=>s.value)))
@@ -171,12 +183,13 @@ function RadarChart({ data, stats }) {
         {stats.map((_,i) => { const p=pt(i,1); return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.09)" strokeWidth={1} /> })}
         {[0.25,0.5,0.75,1.0].map(f => {
           const p=pt(0,f)
-          return <text key={f} x={p.x+4} y={p.y} fontSize={9} fill="var(--text-dark,#4a3a28)" fontFamily="var(--font-body)" dominantBaseline="central">{Math.round(globalMax*f)}</text>
+          return <text key={f} x={p.x+4} y={p.y} fontSize={9} fill="var(--text-dark,#444444)" fontFamily="var(--font-body)" dominantBaseline="central">{Math.round(globalMax*f)}</text>
         })}
         {stats.map((k,i) => {
           const a=angle(i), p={ x:cx+labelR*Math.cos(a), y:cy+labelR*Math.sin(a) }
           const anchor = Math.cos(a)>0.1?'start':Math.cos(a)<-0.1?'end':'middle'
-          return <text key={i} x={p.x} y={p.y} textAnchor={anchor} dominantBaseline="central" fontSize={12} fill="var(--text-muted,#8a7a68)" fontFamily="var(--font-body)" fontWeight="500">{k.length>14?k.slice(0,13)+'…':k}</text>
+          const lbl = statLabel(k)
+          return <text key={i} x={p.x} y={p.y} textAnchor={anchor} dominantBaseline="central" fontSize={12} fill="var(--text-muted,#8a8a8a)" fontFamily="var(--font-body)" fontWeight="500">{lbl.length>14?lbl.slice(0,13)+'…':lbl}</text>
         })}
         {data.map(({ stats:cs, color, card }) => {
           const pts = stats.map((k,i) => { const v=cs.find(s=>s.key===k)?.value||0; const p=pt(i, globalMax>0?v/globalMax:0); return `${p.x},${p.y}` }).join(' ')
@@ -193,7 +206,7 @@ function RadarChart({ data, stats }) {
   )
 }
 
-function BarChart({ data, stats }) {
+function BarChart({ data, stats, statLabel }) {
   const maxVal = Math.max(1, ...data.flatMap(d => d.stats.map(s=>s.value)))
   const bw=24, gap=6, gg=20, chartH=240
   const totalW = stats.length*(data.length*(bw+gap)+gg)+60
@@ -206,7 +219,7 @@ function BarChart({ data, stats }) {
             return (
               <g key={f}>
                 <line x1={0} y1={y} x2={totalW-60} y2={y} stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
-                <text x={-6} y={y} textAnchor="end" dominantBaseline="central" fontSize={9} fill="var(--text-dark,#4a3a28)">{Math.round(maxVal*f)}</text>
+                <text x={-6} y={y} textAnchor="end" dominantBaseline="central" fontSize={9} fill="var(--text-dark,#444444)">{Math.round(maxVal*f)}</text>
               </g>
             )
           })}
@@ -226,7 +239,7 @@ function BarChart({ data, stats }) {
                     </g>
                   )
                 })}
-                <text x={gx+(data.length*(bw+gap))/2} y={chartH+14} textAnchor="middle" fontSize={11} fill="var(--text-muted,#7a6a58)" fontFamily="var(--font-body)">{stat.length>10?stat.slice(0,9)+'…':stat}</text>
+                {(() => { const lbl = statLabel(stat); return <text x={gx+(data.length*(bw+gap))/2} y={chartH+14} textAnchor="middle" fontSize={11} fill="var(--text-muted,#8a8a8a)" fontFamily="var(--font-body)">{lbl.length>10?lbl.slice(0,9)+'…':lbl}</text> })()}
               </g>
             )
           })}

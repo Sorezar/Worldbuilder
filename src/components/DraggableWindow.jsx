@@ -76,7 +76,7 @@ export default function DraggableWindow({
         }}
       >
         {icon && <span style={{ fontSize: 14 }}>{icon}</span>}
-        <span style={{ fontFamily: "'Lora', serif", fontSize: 14, color: '#f0e6d3', fontWeight: 500, flex: 1 }}>
+        <span style={{ fontFamily: "'Lora', serif", fontSize: 14, color: '#f0f0f0', fontWeight: 500, flex: 1 }}>
           {title}
         </span>
         {/* Window controls */}

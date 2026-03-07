@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Icon } from './ui.jsx'
+import { Icon, ConfirmModal } from './ui.jsx'
 import { getType, BUILTIN_TYPES, isDescendantOf } from '../data/types.js'
 
 export default function Sidebar({
@@ -10,7 +10,7 @@ export default function Sidebar({
   onDeleteCard, onDuplicateCard,
   onShowTypes, showTypes, theme,
 }) {
-  const T = theme || { accent:'#c8a064', accentLight:'rgba(200,160,100,', textPrimary:'#f0e6d3', textSecondary:'#c8b89a', textMuted:'#9a8a70', textDim:'#5a4a38', textDark:'#4a3a28', textDarker:'#3a2a18', bgOverlay:'rgba(5,2,0,', bgPanel:'rgba(10,6,1,', borderColor:'rgba(255,200,120,' }
+  const T = theme || { accent:'#c8a064', accentLight:'rgba(200,160,100,', textPrimary:'#f0f0f0', textSecondary:'#c0c0c0', textMuted:'#8a8a8a', textDim:'#5a5a5a', textDark:'#444444', textDarker:'#2e2e2e', bgOverlay:'rgba(5,2,0,', bgPanel:'rgba(10,6,1,', borderColor:'rgba(255,200,120,' }
   const [search,          setSearch]          = useState('')
   const [expandedFolders, setExpandedFolders] = useState(new Set())
   const [dragOverId,      setDragOverId]      = useState(null)
@@ -24,6 +24,7 @@ export default function Sidebar({
   const [renamingCardId,  setRenamingCardId]  = useState(null)
   const [renameDraft,     setRenameDraft]     = useState('')
   const [sortBy,          setSortBy]          = useState('manual')
+  const [confirmDelete,   setConfirmDelete]   = useState(null) // { type: 'card'|'folder', id, name }
 
   const allTypes = [...BUILTIN_TYPES.filter(b => !customTypes.some(c => c.id === b.id)), ...customTypes].filter(t => !t.virtual)
   const toggleFolder  = id => setExpandedFolders(prev => { const s=new Set(prev); s.has(id)?s.delete(id):s.add(id); return s })
@@ -73,7 +74,7 @@ export default function Sidebar({
   const renderCard = (card, depth=0) => {
     const type  = getType(card.typeId, customTypes)
     const isOpen = openCardIds.includes(card.id)
-    const color  = type?.color || '#7a6a58'
+    const color  = type?.color || '#8a8a8a'
     const isRenaming = renamingCardId === card.id
     return (
       <div key={card.id}
@@ -112,7 +113,7 @@ export default function Sidebar({
         {isOpen && <div style={{ width:5,height:5,borderRadius:'50%',background:color,flexShrink:0,opacity:0.7 }} />}
         <button className="card-more-btn"
           onClick={e => { e.stopPropagation(); setContextMenu({ cardId: card.id, x: e.clientX, y: e.clientY }) }}
-          style={{ opacity:0, background:'none', border:'none', color:'var(--text-dim,#5a4a38)', cursor:'pointer', padding:'2px 4px', fontSize:14, lineHeight:1, flexShrink:0, transition:'opacity 0.1s' }}>
+          style={{ opacity:0, background:'none', border:'none', color:'var(--text-dim,#5a5a5a)', cursor:'pointer', padding:'2px 4px', fontSize:14, lineHeight:1, flexShrink:0, transition:'opacity 0.1s' }}>
           ⋯
         </button>
       </div>
@@ -130,7 +131,7 @@ export default function Sidebar({
           folder={folder} depth={depth} isExpanded={isExpanded} isDragOver={isDragOver}
           onToggle={() => toggleFolder(folder.id)}
           onRename={name => onUpdateFolder(folder.id,{name})}
-          onDelete={() => { if(confirm(`Supprimer "${folder.name}" ?`)) onDeleteFolder(folder.id) }}
+          onDelete={() => setConfirmDelete({ type:'folder', id:folder.id, name:folder.name })}
           onDragEnter={e=>handleFolderDragEnter(e,folder.id)} onDragLeave={e=>handleFolderDragLeave(e,folder.id)}
           onDragOver={handleDragOver} onDrop={e=>handleDrop(e,folder.id)}
         />
@@ -276,11 +277,21 @@ export default function Sidebar({
           onRename={() => { const card = cards.find(c => c.id === contextMenu.cardId); setRenamingCardId(contextMenu.cardId); setRenameDraft(card?.name || ''); setContextMenu(null) }}
           onPin={() => { const card = cards.find(c => c.id === contextMenu.cardId); onUpdateCard(contextMenu.cardId, { pinned: !card?.pinned }); setContextMenu(null) }}
           onDuplicate={() => { onDuplicateCard(contextMenu.cardId); setContextMenu(null) }}
-          onDelete={() => { if (confirm('Supprimer cette carte ?')) onDeleteCard(contextMenu.cardId); setContextMenu(null) }}
+          onDelete={() => { const card = cards.find(c => c.id === contextMenu.cardId); setConfirmDelete({ type:'card', id:contextMenu.cardId, name:card?.name || 'cette carte' }); setContextMenu(null) }}
           isPinned={cards.find(c => c.id === contextMenu.cardId)?.pinned}
           onClose={() => setContextMenu(null)}
         />,
         document.body
+      )}
+
+      {/* Delete confirmation modal */}
+      {confirmDelete && (
+        <ConfirmModal
+          title={confirmDelete.type === 'folder' ? 'Supprimer ce dossier ?' : 'Supprimer cette carte ?'}
+          message={`"${confirmDelete.name}" sera supprimé${confirmDelete.type === 'folder' ? '. Les cartes du dossier ne seront pas supprimées.' : ' définitivement.'}`}
+          onConfirm={() => { if (confirmDelete.type === 'folder') onDeleteFolder(confirmDelete.id); else onDeleteCard(confirmDelete.id); setConfirmDelete(null) }}
+          onCancel={() => setConfirmDelete(null)}
+        />
       )}
 
       {/* Footer bar */}
@@ -320,7 +331,7 @@ function FooterBtn({ icon, emoji, tooltip, color, filled, onClick }) {
       style={{
         padding: emoji ? '4px 7px' : '6px 8px', borderRadius:8, border:'none',
         background: filled ? (hov ? 'var(--accent-15,rgba(200,160,100,0.15))' : 'var(--accent-10,rgba(200,160,100,0.08))') : (hov ? `${color}18` : 'rgba(255,255,255,0.03)'),
-        color: hov ? color : 'var(--text-dark,#4a3a28)',
+        color: hov ? color : 'var(--text-dark,#444444)',
         cursor:'pointer', transition:'all 0.12s', display:'flex', alignItems:'center', justifyContent:'center',
         fontSize: emoji ? 15 : 13, lineHeight:1,
       }}>
@@ -348,15 +359,15 @@ function FolderRow({ folder, depth, isExpanded, isDragOver, onToggle, onRename, 
           ? <input autoFocus value={draft} onChange={e=>setDraft(e.target.value)} onBlur={commit}
               onKeyDown={e=>{if(e.key==='Enter')commit();if(e.key==='Escape'){setDraft(folder.name);setRenaming(false)}}}
               onClick={e=>e.stopPropagation()}
-              style={{ flex:1, background:'rgba(255,255,255,0.07)', border:'1px solid var(--accent-22,rgba(200,160,100,0.35))', borderRadius:4, padding:'1px 5px', color:'var(--text-primary,#e2d9c8)', fontSize:12, outline:'none' }} />
-          : <span onDoubleClick={e=>{e.stopPropagation();setRenaming(true)}} style={{ fontSize:12.5, color:'var(--text-muted,#8a7a68)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontFamily:"var(--font-body)" }}>{folder.name}</span>
+              style={{ flex:1, background:'rgba(255,255,255,0.07)', border:'1px solid var(--accent-22,rgba(200,160,100,0.35))', borderRadius:4, padding:'1px 5px', color:'var(--text-primary,#f0f0f0)', fontSize:12, outline:'none' }} />
+          : <span onDoubleClick={e=>{e.stopPropagation();setRenaming(true)}} style={{ fontSize:12.5, color:'var(--text-muted,#8a8a8a)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontFamily:"var(--font-body)" }}>{folder.name}</span>
         }
       </span>
-      <Icon name={isExpanded?'chevron_down':'chevron_right'} size={9} style={{ color:'var(--text-darker,#3a2a18)', flexShrink:0 }} />
+      <Icon name={isExpanded?'chevron_down':'chevron_right'} size={9} style={{ color:'var(--text-darker,#2e2e2e)', flexShrink:0 }} />
       {hovered && !renaming && (
         <div style={{ display:'flex', gap:1, flexShrink:0 }}>
-          <button onClick={e=>{e.stopPropagation();setRenaming(true)}} style={{ background:'none',border:'none',color:'var(--text-dark,#4a3a28)',cursor:'pointer',fontSize:10,padding:'1px 3px',lineHeight:1 }}>✎</button>
-          <button onClick={e=>{e.stopPropagation();onDelete()}} style={{ background:'none',border:'none',color:'var(--text-dark,#4a3a28)',cursor:'pointer',fontSize:10,padding:'1px 3px',lineHeight:1 }}>✕</button>
+          <button onClick={e=>{e.stopPropagation();setRenaming(true)}} style={{ background:'none',border:'none',color:'var(--text-dark,#444444)',cursor:'pointer',fontSize:10,padding:'1px 3px',lineHeight:1 }}>✎</button>
+          <button onClick={e=>{e.stopPropagation();onDelete()}} style={{ background:'none',border:'none',color:'var(--text-dark,#444444)',cursor:'pointer',fontSize:10,padding:'1px 3px',lineHeight:1 }}>✕</button>
         </div>
       )}
     </div>
@@ -384,7 +395,7 @@ const FilterMenu = React.forwardRef(function FilterMenu({ style: posStyle, allTy
     }}>
       {/* Filter by type */}
       <div style={{ padding:'10px 12px 6px' }}>
-        <div style={{ fontSize:10, color:'var(--text-dark,#4a3a28)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>Filtrer par type</div>
+        <div style={{ fontSize:10, color:'var(--text-dark,#444444)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>Filtrer par type</div>
         <FilterRow icon="📄" label="Tous" active={!filterTypeId} onClick={()=>{ setFilterTypeId(null) }} />
         {rootTypes.map(type => {
           const children = allTypes.filter(t => t.parentId === type.id)
@@ -403,7 +414,7 @@ const FilterMenu = React.forwardRef(function FilterMenu({ style: posStyle, allTy
 
       {/* Sort */}
       <div style={{ padding:'6px 12px 10px' }}>
-        <div style={{ fontSize:10, color:'var(--text-dark,#4a3a28)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>Trier par</div>
+        <div style={{ fontSize:10, color:'var(--text-dark,#444444)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>Trier par</div>
         {SORT_OPTIONS.map(opt => (
           <FilterRow key={opt.id} label={opt.label} active={sortBy === opt.id}
             dot={sortBy === opt.id}
@@ -422,7 +433,7 @@ function FilterRow({ icon, label, color, active, dot, hasChildren, onClick }) {
       style={{
         display:'flex', alignItems:'center', gap:8, padding:'6px 8px', borderRadius:7,
         cursor:'pointer', fontSize:12, transition:'background 0.08s',
-        color: active ? 'var(--accent,#c8a064)' : 'var(--text-muted,#9a8a70)',
+        color: active ? 'var(--accent,#c8a064)' : 'var(--text-muted,#8a8a8a)',
         background: hov ? 'rgba(255,255,255,0.05)' : 'transparent',
       }}>
       {dot !== undefined && (
@@ -476,7 +487,7 @@ function ContextMenuItem({ icon, label, danger, onClick }) {
     <div onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
         display:'flex', alignItems:'center', gap:9, padding:'7px 14px', cursor:'pointer',
-        color: danger ? (hov ? '#ef4444' : '#a04030') : (hov ? '#f0e6d3' : '#9a8a70'),
+        color: danger ? (hov ? '#ef4444' : '#a04030') : (hov ? '#f0f0f0' : '#8a8a8a'),
         background: hov ? 'rgba(255,255,255,0.05)' : 'transparent', transition:'all 0.08s',
         fontSize:12.5, fontFamily:"var(--font-body)",
       }}>
@@ -498,7 +509,7 @@ function NewCardMenu({ allTypes, onSelect, onClose }) {
   const rootTypes = allTypes.filter(t=>!t.parentId)
   return (
     <div ref={ref} style={{ position:'absolute', bottom:52, left:8, right:8, zIndex:300, background:'rgba(10,6,1,0.85)', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid rgba(255,200,120,0.14)', borderRadius:14, overflow:'hidden', boxShadow:'0 -8px 40px rgba(0,0,0,0.8)' }}>
-      <div style={{ padding:'9px 14px', borderBottom:'1px solid rgba(255,255,255,0.05)', fontSize:11, color:'var(--text-dim,#5a4a38)', textTransform:'uppercase', letterSpacing:'0.07em' }}>
+      <div style={{ padding:'9px 14px', borderBottom:'1px solid rgba(255,255,255,0.05)', fontSize:11, color:'var(--text-dim,#5a5a5a)', textTransform:'uppercase', letterSpacing:'0.07em' }}>
         Nouveau document
       </div>
       <div style={{ maxHeight:280, overflowY:'auto', padding:'4px 6px' }}>
@@ -509,7 +520,7 @@ function NewCardMenu({ allTypes, onSelect, onClose }) {
             <div key={type.id}>
               <div style={{ display:'flex', alignItems:'center', borderRadius:7, overflow:'hidden' }}>
                 <div onClick={() => onSelect(type.id)}
-                  style={{ flex:1, display:'flex', alignItems:'center', gap:9, padding:'8px 12px', cursor:'pointer', fontSize:13, color:'var(--text-secondary,#c8b89a)', borderRadius:7, transition:'background 0.08s' }}
+                  style={{ flex:1, display:'flex', alignItems:'center', gap:9, padding:'8px 12px', cursor:'pointer', fontSize:13, color:'var(--text-secondary,#c0c0c0)', borderRadius:7, transition:'background 0.08s' }}
                   onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
                   onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                   <span style={{ width:18,textAlign:'center',fontSize:15 }}>{type.icon}</span>
@@ -517,14 +528,14 @@ function NewCardMenu({ allTypes, onSelect, onClose }) {
                 </div>
                 {children.length > 0 && (
                   <button onClick={e=>{e.stopPropagation();setExpandedParent(isExp?null:type.id)}}
-                    style={{ background:'none',border:'none',color:'var(--text-dark,#4a3a28)',cursor:'pointer',padding:'8px 10px',fontSize:10 }}>
+                    style={{ background:'none',border:'none',color:'var(--text-dark,#444444)',cursor:'pointer',padding:'8px 10px',fontSize:10 }}>
                     <Icon name={isExp?'chevron_down':'chevron_right'} size={11} />
                   </button>
                 )}
               </div>
               {isExp && children.map(child => (
                 <div key={child.id} onClick={() => onSelect(child.id)}
-                  style={{ display:'flex', alignItems:'center', gap:9, padding:'7px 12px 7px 28px', cursor:'pointer', fontSize:12, color:'var(--text-muted,#9a8a70)', borderRadius:7 }}
+                  style={{ display:'flex', alignItems:'center', gap:9, padding:'7px 12px 7px 28px', cursor:'pointer', fontSize:12, color:'var(--text-muted,#8a8a8a)', borderRadius:7 }}
                   onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.04)'}
                   onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                   <span style={{ width:16,textAlign:'center',fontSize:13 }}>{child.icon}</span>

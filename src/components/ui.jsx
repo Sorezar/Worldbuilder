@@ -76,13 +76,13 @@ export function Btn({ children, onClick, variant = 'ghost', size = 'md', style, 
     icon_sm: { padding: 4, width: 24, height: 24, borderRadius: 7 },
   }
   const variants = {
-    ghost:   { background: 'transparent',                         color: 'var(--text-dim,#7a6a58)' },
-    subtle:  { background: 'rgba(255,255,255,0.06)',              color: 'var(--text-secondary,#c8b89a)', border: '1px solid rgba(255,255,255,0.08)' },
+    ghost:   { background: 'transparent',                         color: 'var(--text-dim,#8a8a8a)' },
+    subtle:  { background: 'rgba(255,255,255,0.06)',              color: 'var(--text-secondary,#c0c0c0)', border: '1px solid rgba(255,255,255,0.08)' },
     primary: { background: 'var(--accent-15,rgba(200,160,100,0.15))', color: 'var(--accent,#c8a064)', border: '1px solid var(--accent-22,rgba(200,160,100,0.22))' },
     danger:  { background: 'rgba(220,60,60,0.1)',                 color: '#e05040', border: '1px solid rgba(220,60,60,0.18)' },
     solid:   { background: 'var(--accent,#c8a064)',               color: '#1a1208', border: 'none' },
-    dark:    { background: 'rgba(0,0,0,0.4)',                     color: 'var(--text-secondary,#c8b89a)', border: '1px solid rgba(255,255,255,0.09)' },
-    active:  { background: 'var(--accent-18,rgba(200,160,100,0.18))', color: 'var(--text-primary,#f0e6d3)', border: '1px solid var(--accent-22,rgba(200,160,100,0.22))' },
+    dark:    { background: 'rgba(0,0,0,0.4)',                     color: 'var(--text-secondary,#c0c0c0)', border: '1px solid rgba(255,255,255,0.09)' },
+    active:  { background: 'var(--accent-18,rgba(200,160,100,0.18))', color: 'var(--text-primary,#f0f0f0)', border: '1px solid var(--accent-22,rgba(200,160,100,0.22))' },
   }
   return (
     <button type={type} onClick={disabled ? undefined : onClick} title={title}
@@ -96,7 +96,7 @@ export function Btn({ children, onClick, variant = 'ghost', size = 'md', style, 
 }
 
 // ─── Tag ─────────────────────────────────────────────────────
-export function Tag({ label, color = '#9a8a70', onRemove, onClick, size = 'md' }) {
+export function Tag({ label, color = '#8a8a8a', onRemove, onClick, size = 'md' }) {
   const sizes = { sm: { padding: '1px 6px', fontSize: 11 }, md: { padding: '2px 8px', fontSize: 12 } }
   return (
     <span onClick={onClick} style={{
@@ -121,7 +121,7 @@ export function Input({ value, onChange, placeholder, style, autoFocus, onKeyDow
       placeholder={placeholder} autoFocus={autoFocus} onKeyDown={onKeyDown}
       style={{
         background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
-        borderRadius: 10, padding: '8px 12px', color: '#e2d9c8', fontSize: 13,
+        borderRadius: 10, padding: '8px 12px', color: '#f0f0f0', fontSize: 13,
         outline: 'none', width: '100%', transition: 'border-color 0.12s', ...style,
       }}
       onFocus={e => e.target.style.borderColor = 'var(--accent,rgba(200,160,100,0.6))'}
@@ -137,7 +137,7 @@ export function Textarea({ value, onChange, placeholder, rows = 4, style }) {
       placeholder={placeholder} rows={rows}
       style={{
         background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
-        borderRadius: 10, padding: '9px 12px', color: '#e2d9c8', fontSize: 13,
+        borderRadius: 10, padding: '9px 12px', color: '#f0f0f0', fontSize: 13,
         lineHeight: 1.75, outline: 'none', width: '100%', resize: 'vertical',
         transition: 'border-color 0.12s', fontFamily: "var(--font-body)", ...style,
       }}
@@ -166,7 +166,7 @@ export function Dropdown({ value, options, onChange, placeholder = 'Sélectionne
         padding: '7px 12px', borderRadius: 10, cursor: 'pointer',
         background: 'rgba(255,255,255,0.05)',
         border: open ? '1px solid var(--accent,rgba(200,160,100,0.4))' : '1px solid rgba(255,255,255,0.09)',
-        fontSize: 13, color: selected ? 'var(--text-primary,#e2d9c8)' : '#4a4030',
+        fontSize: 13, color: selected ? 'var(--text-primary,#f0f0f0)' : '#4a4030',
       }}>
         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
         <Icon name="chevron_down" size={12} style={{ opacity: 0.4, flexShrink: 0 }} />
@@ -186,7 +186,7 @@ export function Dropdown({ value, options, onChange, placeholder = 'Sélectionne
               <div key={i} onClick={() => { onChange(val); setOpen(false) }}
                 style={{
                   padding: '8px 13px', fontSize: 13, cursor: 'pointer',
-                  color: isSelected ? 'var(--accent,#c8a064)' : 'var(--text-secondary,#c8b89a)',
+                  color: isSelected ? 'var(--accent,#c8a064)' : 'var(--text-secondary,#c0c0c0)',
                   background: isSelected ? 'var(--accent-10,rgba(200,160,100,0.1))' : 'transparent',
                   display: 'flex', alignItems: 'center', gap: 8,
                 }}
@@ -231,12 +231,34 @@ export function Modal({ title, children, onClose, width = 520, noPad = false }) 
             padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)',
             flexShrink: 0,
           }}>
-            <span style={{ fontFamily: "var(--font)", fontSize: 16, color: 'var(--text-primary,#f0e6d3)' }}>{title}</span>
+            <span style={{ fontFamily: "var(--font)", fontSize: 16, color: 'var(--text-primary,#f0f0f0)' }}>{title}</span>
             <Btn size="icon" variant="ghost" onClick={onClose}><Icon name="x" size={14} /></Btn>
           </div>
         )}
         <div style={{ flex: 1, overflow: 'auto', padding: noPad ? 0 : '20px' }}>
           {children}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── ConfirmModal ─────────────────────────────────────────────
+export function ConfirmModal({ title, message, confirmLabel = 'Supprimer', onConfirm, onCancel }) {
+  useEffect(() => {
+    const h = e => { if (e.key === 'Escape') onCancel() }
+    document.addEventListener('keydown', h)
+    return () => document.removeEventListener('keydown', h)
+  }, [onCancel])
+  return (
+    <div className="anim-fadein" onClick={e => { if (e.target === e.currentTarget) onCancel() }}
+      style={{ position: 'fixed', inset: 0, zIndex: 850, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="anim-scalein" style={{ width: '90%', maxWidth: 360, background: 'rgba(14,10,4,0.95)', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)', border: '1px solid rgba(255,200,120,0.14)', borderRadius: 16, padding: '24px 28px', boxShadow: '0 16px 48px rgba(0,0,0,0.7)' }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary,#f0f0f0)', marginBottom: 10, fontFamily: 'var(--font)' }}>{title}</div>
+        <p style={{ fontSize: 13, color: 'var(--text-dim,#5a5a5a)', lineHeight: 1.5, marginBottom: 20 }}>{message}</p>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <Btn variant="subtle" size="sm" onClick={onCancel}>Annuler</Btn>
+          <Btn variant="danger" size="sm" onClick={onConfirm}>{confirmLabel}</Btn>
         </div>
       </div>
     </div>
@@ -272,7 +294,7 @@ export function PropRow({ label, icon, children, style }) {
     }}>
       <div style={{
         width: 160, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 7,
-        padding: '7px 10px 7px 0', color: 'var(--text-dim,#5a4a38)', fontSize: 12,
+        padding: '7px 10px 7px 0', color: 'var(--text-dim,#5a5a5a)', fontSize: 12,
       }}>
         {icon && <span style={{ fontSize: 13 }}>{icon}</span>}
         <span>{label}</span>
@@ -299,7 +321,7 @@ export function InlineEdit({ value, onChange, placeholder, style, multiline = fa
           onKeyDown={e => { if (e.key === 'Escape') { setDraft(value); setEditing(false) } }}
           style={{
             background: 'transparent', border: 'none', borderBottom: '1px solid rgba(200,160,100,0.4)',
-            color: '#e2d9c8', fontSize, width: '100%', outline: 'none', resize: 'none',
+            color: '#f0f0f0', fontSize, width: '100%', outline: 'none', resize: 'none',
             fontFamily: "var(--font-body)", lineHeight: 1.7, ...style,
           }}
           rows={3}
@@ -312,14 +334,14 @@ export function InlineEdit({ value, onChange, placeholder, style, multiline = fa
         onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setDraft(value); setEditing(false) } }}
         style={{
           background: 'transparent', border: 'none', borderBottom: '1px solid rgba(200,160,100,0.4)',
-          color: '#e2d9c8', fontSize, width: '100%', outline: 'none', ...style,
+          color: '#f0f0f0', fontSize, width: '100%', outline: 'none', ...style,
         }}
       />
     )
   }
   return (
     <span onClick={() => setEditing(true)}
-      style={{ cursor: 'text', color: value ? '#e2d9c8' : '#4a4030', fontSize, ...style }}>
+      style={{ cursor: 'text', color: value ? '#f0f0f0' : '#4a4030', fontSize, ...style }}>
       {value || placeholder || '—'}
     </span>
   )
@@ -374,7 +396,7 @@ export function EmojiPicker({ value, onChange, style }) {
         }}>
           <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Rechercher…"
-            style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:6, padding:'5px 8px', color:'#c8b89a', fontSize:11, outline:'none', marginBottom:6, boxSizing:'border-box' }}
+            style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:6, padding:'5px 8px', color:'#c0c0c0', fontSize:11, outline:'none', marginBottom:6, boxSizing:'border-box' }}
           />
           <div style={{ display:'grid', gridTemplateColumns:'repeat(10, 1fr)', gap:2, maxHeight:160, overflowY:'auto' }}>
             {filtered.map((em, i) => (

@@ -63,7 +63,7 @@ export default function CanvasView({ card, cards, customTypes, allTypes, onUpdat
         onBgMouseDown(e)
       } else if (tool === 'text') {
         const pos = toCanvas(e.clientX, e.clientY)
-        const el = { id: uid(), type: 'text', text: 'Texte', x: pos.x, y: pos.y, fontSize: 16, color: '#e2d9c8' }
+        const el = { id: uid(), type: 'text', text: 'Texte', x: pos.x, y: pos.y, fontSize: 16, color: '#f0f0f0' }
         addElement(el)
         setEditingText(el.id)
         setTool('select')
@@ -204,7 +204,7 @@ export default function CanvasView({ card, cards, customTypes, allTypes, onUpdat
         </svg>
 
         {/* Zoom indicator */}
-        <div style={{ position: 'absolute', top: 12, right: 12, fontSize: 11, color: '#3a2a18', zIndex: 10 }}>
+        <div style={{ position: 'absolute', top: 12, right: 12, fontSize: 11, color: '#2e2e2e', zIndex: 10 }}>
           {Math.round(zoom * 100)}%
         </div>
 
@@ -232,11 +232,11 @@ function CanvasCard({ el, isSel, cards, allTypes, onMouseDown }) {
       {refCard?.image && (
         <image href={refCard.image} x={el.x + 10} y={el.y + 10} width={36} height={36} clipPath="inset(0 round 6px)" />
       )}
-      <text x={el.x + (refCard?.image ? 54 : 12)} y={el.y + 24} fontSize={12} fill="#e2d9c8" fontFamily="'DM Sans', sans-serif">
+      <text x={el.x + (refCard?.image ? 54 : 12)} y={el.y + 24} fontSize={12} fill="#f0f0f0" fontFamily="'DM Sans', sans-serif">
         {refCard ? refCard.name : '???'}
       </text>
       {type && (
-        <text x={el.x + (refCard?.image ? 54 : 12)} y={el.y + 42} fontSize={9} fill={type.color || '#5a4a38'}>
+        <text x={el.x + (refCard?.image ? 54 : 12)} y={el.y + 42} fontSize={9} fill={type.color || '#5a5a5a'}>
           {type.icon} {type.name}
         </text>
       )}
@@ -254,13 +254,13 @@ function CanvasText({ el, isSel, editing, onMouseDown, onChange, onDone }) {
         <input autoFocus value={draft} onChange={e => setDraft(e.target.value)}
           onBlur={() => { onChange(draft); onDone() }}
           onKeyDown={e => { if (e.key === 'Enter') { onChange(draft); onDone() }; if (e.key === 'Escape') onDone() }}
-          style={{ background: 'rgba(10,6,1,0.9)', border: '1px solid rgba(200,160,100,0.4)', borderRadius: 4, padding: '2px 6px', color: el.color || '#e2d9c8', fontSize: el.fontSize || 16, fontFamily: "'DM Sans', sans-serif", outline: 'none', width: '100%' }}
+          style={{ background: 'rgba(10,6,1,0.9)', border: '1px solid rgba(200,160,100,0.4)', borderRadius: 4, padding: '2px 6px', color: el.color || '#f0f0f0', fontSize: el.fontSize || 16, fontFamily: "'DM Sans', sans-serif", outline: 'none', width: '100%' }}
         />
       </foreignObject>
     )
   }
   return (
-    <text x={el.x} y={el.y} fontSize={el.fontSize || 16} fill={el.color || '#e2d9c8'}
+    <text x={el.x} y={el.y} fontSize={el.fontSize || 16} fill={el.color || '#f0f0f0'}
       fontFamily="'DM Sans', sans-serif" style={{ cursor: 'pointer' }}
       onMouseDown={onMouseDown}
       stroke={isSel ? 'rgba(200,160,100,0.3)' : 'none'} strokeWidth={isSel ? 4 : 0} paintOrder="stroke">

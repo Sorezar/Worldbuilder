@@ -312,19 +312,19 @@ export default function FamilyTreeView({ card, cards, customTypes, allTypes, onU
                         <image href={refCard.image} x={node.x + 10} y={node.y + 10} width={44} height={44}
                           clipPath="inset(0 round 8px)" style={{ pointerEvents: 'none' }} />
                       )}
-                      <text x={node.x + (refCard.image ? 62 : 12)} y={node.y + 30} fontSize={12} fill="#e2d9c8"
+                      <text x={node.x + (refCard.image ? 62 : 12)} y={node.y + 30} fontSize={12} fill="#f0f0f0"
                         fontFamily="'DM Sans', sans-serif" style={{ pointerEvents: 'none' }}>
                         {refCard.name.length > 10 ? refCard.name.slice(0, 9) + '…' : refCard.name}
                       </text>
                       {cardType && (
-                        <text x={node.x + (refCard.image ? 62 : 12)} y={node.y + 48} fontSize={9} fill={cardType.color || '#5a4a38'}
+                        <text x={node.x + (refCard.image ? 62 : 12)} y={node.y + 48} fontSize={9} fill={cardType.color || '#5a5a5a'}
                           style={{ pointerEvents: 'none' }}>
                           {cardType.icon} {cardType.name}
                         </text>
                       )}
                     </>
                   ) : (
-                    <text x={node.x + NODE_W / 2} y={node.y + NODE_H / 2 + 4} textAnchor="middle" fontSize={11} fill="#4a3a28"
+                    <text x={node.x + NODE_W / 2} y={node.y + NODE_H / 2 + 4} textAnchor="middle" fontSize={11} fill="#444444"
                       fontFamily="'DM Sans', sans-serif" style={{ pointerEvents: 'none' }}>
                       Cliquer pour lier
                     </text>
@@ -362,16 +362,16 @@ export default function FamilyTreeView({ card, cards, customTypes, allTypes, onU
               <div style={{ padding: '7px 9px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 <input autoFocus value={pickerSearch} onChange={e => setPickerSearch(e.target.value)}
                   placeholder="Rechercher un personnage…"
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 9px', color: '#e2d9c8', fontSize: 12, outline: 'none' }}
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 9px', color: '#f0f0f0', fontSize: 12, outline: 'none' }}
                 />
               </div>
               <div style={{ maxHeight: 200, overflowY: 'auto' }}>
-                {filtered.length === 0 && <div style={{ padding: '10px 14px', color: '#3a2a18', fontSize: 12 }}>Aucun résultat</div>}
+                {filtered.length === 0 && <div style={{ padding: '10px 14px', color: '#2e2e2e', fontSize: 12 }}>Aucun résultat</div>}
                 {filtered.map(c => {
                   const t = allTypes.find(x => x.id === c.typeId)
                   return (
                     <div key={c.id} onClick={() => linkNode(showPicker, c.id)}
-                      style={{ padding: '7px 13px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: '#c8b89a' }}
+                      style={{ padding: '7px 13px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: '#c0c0c0' }}
                       onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                       {c.image ? <img src={c.image} alt="" style={{ width: 16, height: 16, borderRadius: 3, objectFit: 'cover' }} /> : <span style={{ fontSize: 12 }}>{t?.icon || '📄'}</span>}
@@ -385,7 +385,7 @@ export default function FamilyTreeView({ card, cards, customTypes, allTypes, onU
         })()}
 
         {/* Zoom */}
-        <div style={{ position: 'absolute', top: 12, right: 12, fontSize: 11, color: '#3a2a18', zIndex: 10 }}>
+        <div style={{ position: 'absolute', top: 12, right: 12, fontSize: 11, color: '#2e2e2e', zIndex: 10 }}>
           {Math.round(zoom * 100)}%
         </div>
 
@@ -416,7 +416,7 @@ export default function FamilyTreeView({ card, cards, customTypes, allTypes, onU
               }}>
                 {EDGE_TYPES.map(et => (
                   <div key={et.id} onClick={() => { setEdgeType(et.id); setShowEdgeMenu(false) }}
-                    style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: edgeType === et.id ? '#c8a064' : '#c8b89a' }}
+                    style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: edgeType === et.id ? '#c8a064' : '#c0c0c0' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                     <span style={{ width: 16, height: 3, background: et.color, borderRadius: 2, display: 'inline-block', borderTop: et.dash ? '1px dashed ' + et.color : 'none' }} />

@@ -23,7 +23,7 @@ export function ToolBtn({ icon, label, active, onClick, children, disabled }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
       padding: children ? '5px 11px' : '7px 9px', borderRadius: 10, border: 'none',
       background: active ? 'rgba(200,160,100,0.2)' : 'transparent',
-      color: active ? '#c8a064' : disabled ? '#3a2a18' : '#7a6a58',
+      color: active ? '#c8a064' : disabled ? '#2e2e2e' : '#8a8a8a',
       fontSize: 12, cursor: disabled ? 'not-allowed' : 'pointer',
       transition: 'all 0.12s', minWidth: 30, height: 32,
       opacity: disabled ? 0.4 : 1,

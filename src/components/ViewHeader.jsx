@@ -19,15 +19,15 @@ export default function ViewHeader({ card, type, onClose, onUpdate, children }) 
       {editing ? (
         <input autoFocus value={draft} onChange={e => setDraft(e.target.value)}
           onBlur={commit} onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
-          style={{ background: 'transparent', border: 'none', borderBottom: '1px solid rgba(200,160,100,0.4)', color: '#f0e6d3', fontSize: 15, fontFamily: "'Lora',serif", fontWeight: 500, outline: 'none', flex: 1, minWidth: 0 }}
+          style={{ background: 'transparent', border: 'none', borderBottom: '1px solid rgba(200,160,100,0.4)', color: '#f0f0f0', fontSize: 15, fontFamily: "'Lora',serif", fontWeight: 500, outline: 'none', flex: 1, minWidth: 0 }}
         />
       ) : (
         <span onDoubleClick={() => { setDraft(card.name); setEditing(true) }}
-          style={{ fontFamily: "'Lora',serif", fontSize: 15, fontWeight: 500, color: '#f0e6d3', cursor: 'text', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          style={{ fontFamily: "'Lora',serif", fontSize: 15, fontWeight: 500, color: '#f0f0f0', cursor: 'text', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {card.name}
         </span>
       )}
-      <span style={{ fontSize: 10, color: type?.color || '#7a6a58', background: (type?.color || '#5a5040') + '18', padding: '2px 7px', borderRadius: 4 }}>
+      <span style={{ fontSize: 10, color: type?.color || '#8a8a8a', background: (type?.color || '#5a5040') + '18', padding: '2px 7px', borderRadius: 4 }}>
         {type?.name || 'Document'}
       </span>
       {children}

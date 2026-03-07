@@ -3,7 +3,7 @@ import { Icon, Btn, Modal } from '../components/ui.jsx'
 import { BUILTIN_TYPES } from '../data/types.js'
 import { THEMES, TITLE_FONTS, BODY_FONTS, GENRE_PRESETS } from '../store/useStore.js'
 
-export default function HomeView({ world, setWorld, cards, customTypes, onOpenCard, onCreateCard }) {
+export default function HomeView({ world, setWorld, cards, customTypes, onOpenCard, onCreateCard, onShowTypes }) {
   const [editingWelcome, setEditingWelcome] = useState(false)
   const [welcomeDraft, setWelcomeDraft] = useState(world.welcomeText || '')
   const [showTheme, setShowTheme] = useState(false)
@@ -17,18 +17,18 @@ export default function HomeView({ world, setWorld, cards, customTypes, onOpenCa
   return (
     <div style={{ flex: 1, overflow: 'auto', padding: '48px 56px', background: 'var(--bg-base-50,rgba(8,4,0,0.5))', backdropFilter: 'blur(40px) saturate(1.4)', WebkitBackdropFilter: 'blur(40px) saturate(1.4)', borderRadius: 16, border: '1px solid var(--border-09,rgba(255,200,120,0.09))' }} className="anim-fadeup">
       {/* Title */}
-      <h1 style={{ fontFamily: "var(--font)", fontSize: 44, fontWeight: 700, color: 'var(--text-primary,#f0e6d3)', marginBottom: 14, lineHeight: 1.1 }}>
+      <h1 style={{ fontFamily: "var(--font)", fontSize: 44, fontWeight: 700, color: 'var(--text-primary,#f0f0f0)', marginBottom: 14, lineHeight: 1.1 }}>
         Bienvenue
       </h1>
 
       {/* Welcome text */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, color: 'var(--text-dim,#6a5a48)', fontSize: 14, marginBottom: 44 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, color: 'var(--text-dim,#5a5a5a)', fontSize: 14, marginBottom: 44 }}>
         <Icon name="tag" size={14} style={{ marginTop: 2, opacity: 0.5, flexShrink: 0 }} />
         {editingWelcome ? (
           <div style={{ flex: 1, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
             <input autoFocus value={welcomeDraft} onChange={e => setWelcomeDraft(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') saveWelcome(); if (e.key === 'Escape') setEditingWelcome(false) }}
-              style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid var(--accent-22,rgba(200,160,100,0.4))', color: 'var(--text-secondary,#c8b89a)', fontSize: 14, outline: 'none', paddingBottom: 2 }}
+              style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid var(--accent-22,rgba(200,160,100,0.4))', color: 'var(--text-secondary,#c0c0c0)', fontSize: 14, outline: 'none', paddingBottom: 2 }}
             />
             <Btn size="sm" variant="primary" onClick={saveWelcome}><Icon name="check" size={12} /></Btn>
             <Btn size="sm" variant="ghost" onClick={() => setEditingWelcome(false)}><Icon name="x" size={12} /></Btn>
@@ -44,12 +44,12 @@ export default function HomeView({ world, setWorld, cards, customTypes, onOpenCa
       <div style={{ display: 'flex', gap: 52, alignItems: 'flex-start' }}>
         {/* Recent cards */}
         <div style={{ flex: 1 }}>
-          <h2 style={{ fontFamily: "var(--font)", fontSize: 18, color: 'var(--text-secondary,#c8b89a)', marginBottom: 18, fontWeight: 500 }}>
+          <h2 style={{ fontFamily: "var(--font)", fontSize: 18, color: 'var(--text-secondary,#c0c0c0)', marginBottom: 18, fontWeight: 500 }}>
             Espaces de travail récents
           </h2>
           {recentCards.length === 0 ? (
             <div style={{
-              padding: '28px 0', color: 'var(--text-dark,#4a3a28)', fontSize: 14,
+              padding: '28px 0', color: 'var(--text-dark,#444444)', fontSize: 14,
               border: '1px dashed rgba(255,255,255,0.07)', borderRadius: 12, textAlign: 'center',
             }}>
               Aucun document —{' '}
@@ -63,9 +63,9 @@ export default function HomeView({ world, setWorld, cards, customTypes, onOpenCa
                 <RecentCard key={card.id} card={card} customTypes={customTypes} onClick={() => onOpenCard(card.id)} />
               ))}
               <div onClick={() => onCreateCard('character')}
-                style={{ width: 148, minHeight: 118, borderRadius: 12, cursor: 'pointer', border: '1px dashed rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--text-dark,#4a3a28)', fontSize: 13, transition: 'all 0.15s' }}
+                style={{ width: 148, minHeight: 118, borderRadius: 12, cursor: 'pointer', border: '1px dashed rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--text-dark,#444444)', fontSize: 13, transition: 'all 0.15s' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent-22,rgba(200,160,100,0.3))'; e.currentTarget.style.color = 'var(--accent,#c8a064)' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'var(--text-dark,#4a3a28)' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'var(--text-dark,#444444)' }}
               >
                 <Icon name="plus" size={20} />Nouveau
               </div>
@@ -82,17 +82,16 @@ export default function HomeView({ world, setWorld, cards, customTypes, onOpenCa
 
         {/* Manage sidebar */}
         <div style={{ width: 190, flexShrink: 0 }}>
-          <h2 style={{ fontFamily: "var(--font)", fontSize: 18, color: 'var(--text-secondary,#c8b89a)', marginBottom: 14, fontWeight: 500 }}>Gérer</h2>
+          <h2 style={{ fontFamily: "var(--font)", fontSize: 18, color: 'var(--text-secondary,#c0c0c0)', marginBottom: 14, fontWeight: 500 }}>Gérer</h2>
           {[
-            { label: 'Types', icon: 'settings' },
-            { label: 'Médias', icon: 'image' },
+            { label: 'Types', icon: 'settings', action: onShowTypes },
             { label: 'Thème', icon: 'eye', action: () => setShowTheme(true) },
             { label: 'Paramètres', icon: 'settings', action: () => setShowSettings(true) },
           ].map(item => (
             <button key={item.label} onClick={item.action}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', marginBottom: 7, borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.25)', color: 'var(--text-secondary,#c8b89a)', fontSize: 13, cursor: 'pointer', textAlign: 'left', transition: 'all 0.12s' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'var(--text-primary,#f0e6d3)'; e.currentTarget.style.borderColor = 'var(--border-15,rgba(255,200,120,0.15))' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.25)'; e.currentTarget.style.color = 'var(--text-secondary,#c8b89a)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', marginBottom: 7, borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.25)', color: 'var(--text-secondary,#c0c0c0)', fontSize: 13, cursor: 'pointer', textAlign: 'left', transition: 'all 0.12s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'var(--text-primary,#f0f0f0)'; e.currentTarget.style.borderColor = 'var(--border-15,rgba(255,200,120,0.15))' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.25)'; e.currentTarget.style.color = 'var(--text-secondary,#c0c0c0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' }}
             >
               <Icon name={item.icon} size={15} />{item.label}
             </button>
@@ -108,7 +107,7 @@ export default function HomeView({ world, setWorld, cards, customTypes, onOpenCa
 
 function RecentCard({ card, customTypes, onClick }) {
   const allTypes = [...BUILTIN_TYPES, ...(customTypes || [])]
-  const type = allTypes.find(t => t.id === card.typeId) || { icon: '📄', color: '#9a8a70', name: 'Document' }
+  const type = allTypes.find(t => t.id === card.typeId) || { icon: '📄', color: '#8a8a8a', name: 'Document' }
   return (
     <div onClick={onClick} style={{ width: 152, borderRadius: 14, overflow: 'hidden', border: `1px solid ${type.color || '#333'}20`, background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', cursor: 'pointer', transition: 'transform 0.15s, border-color 0.15s' }}
       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = (type.color || '#888') + '50' }}
@@ -118,8 +117,8 @@ function RecentCard({ card, customTypes, onClick }) {
         {!card.image && (type.icon || '📄')}
       </div>
       <div style={{ padding: '9px 11px' }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary,#f0e6d3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.name}</div>
-        <div style={{ fontSize: 10, color: 'var(--text-dark,#4a3a28)', marginTop: 3 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary,#f0f0f0)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.name}</div>
+        <div style={{ fontSize: 10, color: 'var(--text-dark,#444444)', marginTop: 3 }}>
           {card.updatedAt ? new Date(card.updatedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : 'À l\'instant'}
         </div>
       </div>
@@ -133,13 +132,13 @@ function MiniGraph({ cards, customTypes, onOpenCard }) {
     const angle = (i / Math.min(cards.length, 20)) * Math.PI * 2
     const r = 100 + Math.random() * 40
     const type = (customTypes || []).find(t => t.id === c.typeId)
-    return { ...c, x: 300 + r * Math.cos(angle), y: 140 + r * Math.sin(angle), color: type?.color || BUILTIN_COLORS[c.typeId] || '#9a8a70' }
+    return { ...c, x: 300 + r * Math.cos(angle), y: 140 + r * Math.sin(angle), color: type?.color || BUILTIN_COLORS[c.typeId] || '#8a8a8a' }
   })
   const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]))
 
   return (
     <div>
-      <h3 style={{ fontFamily: "var(--font)", fontSize: 15, color: 'var(--text-muted,#7a6a58)', marginBottom: 12, fontWeight: 400 }}>Vue d'ensemble</h3>
+      <h3 style={{ fontFamily: "var(--font)", fontSize: 15, color: 'var(--text-muted,#8a8a8a)', marginBottom: 12, fontWeight: 400 }}>Vue d'ensemble</h3>
       <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, overflow: 'hidden' }}>
         <svg width="100%" height={280} viewBox="0 0 600 280">
           {nodes.map(n => (n.props ? Object.values(n.props) : []).flat().map(refId => {
@@ -151,7 +150,7 @@ function MiniGraph({ cards, customTypes, onOpenCard }) {
             <g key={n.id} onClick={() => onOpenCard(n.id)} style={{ cursor: 'pointer' }}>
               <circle cx={n.x} cy={n.y} r={8} fill={n.color + '40'} stroke={n.color} strokeWidth={1.5} />
               {n.image && <image href={n.image} x={n.x - 7} y={n.y - 7} width={14} height={14} clipPath="inset(0 round 50%)" />}
-              <text x={n.x} y={n.y + 18} textAnchor="middle" fill="var(--text-muted,#7a6a58)" fontSize={9} fontFamily="var(--font-body)">
+              <text x={n.x} y={n.y + 18} textAnchor="middle" fill="var(--text-muted,#8a8a8a)" fontSize={9} fontFamily="var(--font-body)">
                 {n.name.slice(0, 10)}{n.name.length > 10 ? '…' : ''}
               </text>
             </g>
@@ -201,8 +200,6 @@ const ALL_BG_URLS = [
   'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?w=1600&q=80',
   'https://images.unsplash.com/photo-1532767153582-b1a0e5145009?w=1600&q=80',
 ]
-
-const ACCENT_DOTS = ['#c8a064','#a87bdb','#64a0c8','#6ab87a','#e05040','#f59e0b','#c084fc','#06b6d4','#ef4444','#84cc16','#60a5fa','#94a3b8']
 
 // ─── Custom presets (localStorage) ──────────────────────────
 const CUSTOM_PRESETS_KEY = 'wf_custom_presets'
@@ -474,23 +471,6 @@ function EditionContent({ world, onUpdate, onSavePreset }) {
           style={{ width:'100%', padding:'6px 10px', borderRadius:8, border:'1px solid rgba(255,255,255,0.08)', background:'rgba(255,255,255,0.04)', color:'#ccc', fontSize:11, outline:'none', boxSizing:'border-box' }}
         />
 
-        {/* Palette selector */}
-        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-          {Object.values(THEMES).map(t => (
-            <div key={t.id} onClick={() => set({ theme: t.id })}
-              title={t.name}
-              style={{
-                width:36, height:36, borderRadius:8, cursor:'pointer', position:'relative', overflow:'hidden',
-                border: world.theme===t.id ? `2px solid ${t.accent}` : '2px solid rgba(255,255,255,0.06)',
-                background: t.defaultBg, transition:'all 0.12s',
-              }}
-              onMouseEnter={e => { if(world.theme!==t.id) e.currentTarget.style.borderColor=t.accent+'80' }}
-              onMouseLeave={e => { if(world.theme!==t.id) e.currentTarget.style.borderColor='rgba(255,255,255,0.06)' }}
-            >
-              <div style={{ position:'absolute', bottom:3, left:'50%', transform:'translateX(-50%)', width:10, height:10, borderRadius:'50%', background:t.accent, border:'1px solid rgba(0,0,0,0.3)' }} />
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Center: fonts (two columns side by side) */}
@@ -537,24 +517,6 @@ function EditionContent({ world, onUpdate, onSavePreset }) {
             })}
           </div>
         </div>
-      </div>
-
-      {/* Right: accent dots (vertical) */}
-      <div style={{ width:40, flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:6, paddingTop:30 }}>
-        {ACCENT_DOTS.map(c => {
-          const active = (world.accentColor || theme.accent) === c
-          return (
-            <div key={c} onClick={() => set({ accentColor: c })} style={{
-              width: active ? 22 : 18, height: active ? 22 : 18, borderRadius:'50%', background:c, cursor:'pointer',
-              border: active ? '2px solid #fff' : '2px solid transparent',
-              boxShadow: active ? `0 0 0 2px ${c}40` : 'none',
-              transition:'all 0.12s',
-            }}
-              onMouseEnter={e => e.currentTarget.style.transform='scale(1.2)'}
-              onMouseLeave={e => e.currentTarget.style.transform=''}
-            />
-          )
-        })}
       </div>
 
       {/* Bottom bar (absolute) — brightness slider + save preset */}
@@ -605,9 +567,9 @@ function SettingsModal({ world, onUpdateWorld, cards, onClose }) {
     <Modal title="Paramètres" onClose={onClose} width={400}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
-          <label style={{ fontSize: 12, color: 'var(--text-dim,#5a4a38)', display: 'block', marginBottom: 6 }}>Nom du monde</label>
+          <label style={{ fontSize: 12, color: 'var(--text-dim,#5a5a5a)', display: 'block', marginBottom: 6 }}>Nom du monde</label>
           <input value={name} onChange={e => setName(e.target.value)}
-            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 8, padding: '8px 12px', color: '#e2d9c8', fontSize: 13, outline: 'none' }}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 8, padding: '8px 12px', color: '#f0f0f0', fontSize: 13, outline: 'none' }}
           />
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
