@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { useStore, THEMES, TITLE_FONTS, BODY_FONTS } from './store/useStore.js'
+import { useStore, resolveTheme } from './store/useStore.js'
 import { BUILTIN_TYPES } from './data/types.js'
 import Sidebar from './components/Sidebar.jsx'
 import CardWindow from './components/CardWindow.jsx'
@@ -45,9 +45,14 @@ export default function App() {
   const [showWorldSelector, setShowWorldSelector] = useState(false)
   const allTypes = [...BUILTIN_TYPES, ...customTypes]
 
-  const openCard = useCallback(id => {
+  const openCard = useCallback((id, { toggle } = {}) => {
     setOpenCardIds(prev => {
-      if (prev.includes(id)) return prev
+      if (prev.includes(id)) {
+        if (!toggle) return prev
+        const result = prev.filter(x => x !== id)
+        try { localStorage.setItem('wf_open_cards', JSON.stringify(result)) } catch {}
+        return result
+      }
       const next = [...prev, id]
       const result = next.length > MAX_OPEN ? next.slice(-MAX_OPEN) : next
       try { localStorage.setItem('wf_open_cards', JSON.stringify(result)) } catch {}
@@ -93,70 +98,22 @@ export default function App() {
 
   const bg = world.bgImage
   const inMondes = activeView === 'mondes'
-  const theme = THEMES[world.theme || 'warm'] || THEMES.warm
-
-  // Resolve fonts with world overrides
-  const fontTitle = TITLE_FONTS.find(f => f.id === world.fontTitle)?.css || theme.font
-  const fontBody  = BODY_FONTS.find(f => f.id === world.fontBody)?.css  || theme.fontBody
-
-  // Resolve accent (world override or theme default)
-  const accentHex = world.accentColor || theme.accent
-  const toRgba = hex => {
-    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16)
-    return `rgba(${r},${g},${b},`
-  }
-  const accentRgba = accentHex.startsWith('#') ? toRgba(accentHex) : theme.accentLight
-
-  // Resolve bg brightness / colorMode
-  const colorMode = world.colorMode || 'night'
-  const sysDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
-  const isDark = colorMode === 'night' || (colorMode === 'smart' && sysDark)
-  const baseBrightness = world.bgBrightness ?? 0.45
-  const bgBrightness = isDark ? Math.max(baseBrightness - 0.1, 0.1) : Math.min(baseBrightness + 0.2, 0.85)
-
-  // Apply CSS custom properties for the active theme
-  const themeVars = {
-    '--accent': accentHex,
-    '--accent-10': accentRgba + '0.1)',
-    '--accent-15': accentRgba + '0.15)',
-    '--accent-18': accentRgba + '0.18)',
-    '--accent-22': accentRgba + '0.22)',
-    '--text-primary': theme.textPrimary,
-    '--text-secondary': theme.textSecondary,
-    '--text-muted': theme.textMuted,
-    '--text-dim': theme.textDim,
-    '--text-dark': theme.textDark,
-    '--text-darker': theme.textDarker,
-    '--bg-base-35': theme.bgBase + '0.35)',
-    '--bg-base-50': theme.bgBase + '0.5)',
-    '--bg-base-60': theme.bgBase + '0.6)',
-    '--bg-panel-55': theme.bgPanel + '0.55)',
-    '--bg-panel-85': theme.bgPanel + '0.85)',
-    '--bg-panel-92': theme.bgPanel + '0.92)',
-    '--bg-overlay-50': theme.bgOverlay + '0.5)',
-    '--border-06': theme.borderColor + '0.06)',
-    '--border-09': theme.borderColor + '0.09)',
-    '--border-10': theme.borderColor + '0.1)',
-    '--border-14': theme.borderColor + '0.14)',
-    '--border-15': theme.borderColor + '0.15)',
-    '--font': fontTitle,
-    '--font-body': fontBody,
-  }
+  const { vars: themeVars, derived, isDark, bgBrightness } = resolveTheme(world)
 
   return (
     <div style={{ height:'100vh', display:'flex', flexDirection:'column', overflow:'hidden', position:'relative', ...themeVars }}>
       {bg ? (
         <>
           <div style={{ position:'fixed', inset:0, zIndex:0, backgroundImage:`url(${bg})`, backgroundSize:'cover', backgroundPosition:'center', filter:`blur(8px) brightness(${bgBrightness})`, transform:'scale(1.08)' }} />
-          <div style={{ position:'fixed', inset:0, zIndex:0, background: theme.bgBase + (isDark ? '0.35)' : '0.15)') }} />
+          <div style={{ position:'fixed', inset:0, zIndex:0, background: derived.bgBase + (isDark ? '0.35)' : '0.15)') }} />
         </>
       ) : (
-        <div style={{ position:'fixed', inset:0, zIndex:0, background: isDark ? theme.defaultBg : `linear-gradient(145deg, rgba(40,35,28,0.9), rgba(25,22,18,0.95))` }} />
+        <div style={{ position:'fixed', inset:0, zIndex:0, background: isDark ? derived.defaultBg : `linear-gradient(145deg, rgba(40,35,28,0.9), rgba(25,22,18,0.95))` }} />
       )}
 
       <div style={{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', height:'100vh', padding:8, gap:8 }}>
         <TopBar world={world} activeView={activeView} onSetView={handleSetView} cardCount={cards.length}
-          onWorldSelect={() => setShowWorldSelector(true)} theme={theme} />
+          onWorldSelect={() => setShowWorldSelector(true)} />
 
         <div style={{ flex:1, display:'flex', overflow:'hidden', gap:8 }}>
           <div style={{ display: inMondes ? 'flex' : 'none', flexShrink: 0 }}>
@@ -164,7 +121,7 @@ export default function App() {
               onOpenCard={openCard} onCreateCard={handleCreate}
               onCreateFolder={createFolder} onUpdateFolder={updateFolder} onDeleteFolder={deleteFolder}
               onUpdateCard={updateCard} onDeleteCard={deleteCard} onDuplicateCard={duplicateCard}
-              onShowTypes={() => setShowTypes(v => !v)} showTypes={showTypes} theme={theme}
+              onShowTypes={() => setShowTypes(v => !v)} showTypes={showTypes}
             />
           </div>
 
@@ -187,7 +144,7 @@ export default function App() {
 
             {inMondes && (
               openCardIds.length === 0
-                ? <MondesHome world={world} setWorld={setWorld} cards={cards} allTypes={allTypes} theme={theme}
+                ? <MondesHome world={world} setWorld={setWorld} cards={cards} allTypes={allTypes}
                     calendars={calendars} createCalendar={createCalendar} updateCalendar={updateCalendar} deleteCalendar={deleteCalendar}
                     onOpenCard={openCard} onCreateCard={handleCreate} />
                 : <div style={{ flex:1, display:'flex', overflow:'hidden', minWidth:0, gap:8 }}>
@@ -195,7 +152,7 @@ export default function App() {
                       const card = cards.find(c => c.id === cid)
                       if (!card) return null
                       const cardType = allTypes.find(t => t.id === card.typeId)
-                      const containerStyle = { flex:1, minWidth:300, height:'100%', overflow:'hidden', background: theme.bgPanel + '0.55)', backdropFilter:'blur(40px) saturate(1.4)', WebkitBackdropFilter:'blur(40px) saturate(1.4)', borderRadius:16, border:`1px solid ${theme.borderColor}0.1)` }
+                      const containerStyle = { flex:1, minWidth:300, height:'100%', overflow:'hidden', background: 'var(--bg-panel-55)', backdropFilter:'blur(40px) saturate(1.4)', WebkitBackdropFilter:'blur(40px) saturate(1.4)', borderRadius:16, border:'1px solid var(--border-10)' }
                       const commonProps = { card, cards, customTypes, allTypes, onUpdate: updateCard, onDelete: id => { deleteCard(id); closeCard(id) }, onClose: () => closeCard(cid), onOpenCard: openCard, onCreateCard: handleCreate }
                       if (cardType?.viewMode === 'canvas') return <div key={cid} style={containerStyle}><CanvasView {...commonProps} /></div>
                       if (cardType?.viewMode === 'family_tree') return <div key={cid} style={containerStyle}><FamilyTreeView {...commonProps} /></div>
@@ -306,45 +263,45 @@ function WorldSelector({ worlds, activeWorldId, onSelect, onClose, onCreate, onD
   )
 }
 
-function MondesHome({ world, setWorld, cards, allTypes, theme, calendars, createCalendar, updateCalendar, deleteCalendar, onOpenCard, onCreateCard }) {
+function MondesHome({ world, setWorld, cards, allTypes, calendars, createCalendar, updateCalendar, deleteCalendar, onOpenCard, onCreateCard }) {
   const [showCal, setShowCal] = useState(false)
   const recent = [...cards].sort((a,b) => (b.updatedAt||0)-(a.updatedAt||0)).slice(0,8)
   return (
-    <div style={{ flex:1, overflow:'auto', padding:'32px 40px', background: theme.bgPanel + '0.5)', backdropFilter:'blur(40px) saturate(1.4)', WebkitBackdropFilter:'blur(40px) saturate(1.4)', borderRadius:16, border:`1px solid ${theme.borderColor}0.09)` }}>
+    <div style={{ flex:1, overflow:'auto', padding:'32px 40px', background: 'var(--bg-panel-55)', backdropFilter:'blur(40px) saturate(1.4)', WebkitBackdropFilter:'blur(40px) saturate(1.4)', borderRadius:16, border:'1px solid var(--border-09)' }}>
       <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', marginBottom:28 }}>
         <div>
-          <h1 style={{ fontFamily: theme.font, fontSize:26, color: theme.textPrimary, fontWeight:500, margin:0 }}>{world.name}</h1>
-          <p style={{ color: theme.textDark, fontSize:13, marginTop:6 }}>{cards.length} document{cards.length!==1?'s':''} · {calendars.length} calendrier{calendars.length!==1?'s':''}</p>
+          <h1 style={{ fontFamily: 'var(--font)', fontSize:26, color: 'var(--text-primary)', fontWeight:500, margin:0 }}>{world.name}</h1>
+          <p style={{ color: 'var(--text-dark)', fontSize:13, marginTop:6 }}>{cards.length} document{cards.length!==1?'s':''} · {calendars.length} calendrier{calendars.length!==1?'s':''}</p>
         </div>
-        <button onClick={() => setShowCal(true)} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 13px', borderRadius:8, border:`1px solid ${theme.borderColor}0.15)`, background:'rgba(255,255,255,0.03)', color: theme.textMuted, fontSize:12, cursor:'pointer', transition:'color 0.1s' }}
-          onMouseEnter={e => e.currentTarget.style.color=theme.accent} onMouseLeave={e => e.currentTarget.style.color=theme.textMuted}>
+        <button onClick={() => setShowCal(true)} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 13px', borderRadius:8, border:'1px solid var(--border-15)', background:'rgba(255,255,255,0.03)', color: 'var(--text-muted)', fontSize:12, cursor:'pointer', transition:'color 0.1s' }}
+          onMouseEnter={e => e.currentTarget.style.color='var(--accent)'} onMouseLeave={e => e.currentTarget.style.color='var(--text-muted)'}>
           📅 Calendriers
         </button>
       </div>
 
       {recent.length > 0 ? (
         <div>
-          <h3 style={{ fontFamily: theme.font, fontSize:14, color: theme.textDim, marginBottom:14, fontWeight:400, textTransform:'uppercase', letterSpacing:'0.08em' }}>Récents</h3>
+          <h3 style={{ fontFamily: 'var(--font)', fontSize:14, color: 'var(--text-dim)', marginBottom:14, fontWeight:400, textTransform:'uppercase', letterSpacing:'0.08em' }}>Récents</h3>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
             {recent.map(card => {
               const type = allTypes.find(t => t.id===card.typeId)
               return (
                 <div key={card.id} onClick={() => onOpenCard(card.id)}
-                  style={{ padding:'12px 14px', borderRadius:10, border:`1px solid ${theme.borderColor}0.08)`, background:'rgba(255,255,255,0.02)', cursor:'pointer', transition:'all 0.12s' }}
-                  onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor=theme.borderColor+'0.18)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor=theme.borderColor+'0.08)' }}>
+                  style={{ padding:'12px 14px', borderRadius:10, border:'1px solid var(--border-09)', background:'rgba(255,255,255,0.02)', cursor:'pointer', transition:'all 0.12s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor='var(--border-15)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor='var(--border-09)' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
                     {card.image ? <img src={card.image} alt="" style={{ width:22, height:22, borderRadius:5, objectFit:'cover' }} /> : <span style={{ fontSize:18 }}>{type?.icon||'📄'}</span>}
-                    <span style={{ fontSize:10, color:type?.color||theme.textMuted, background:(type?.color||'#5a5040')+'18', padding:'1px 5px', borderRadius:3 }}>{type?.name||'Doc'}</span>
+                    <span style={{ fontSize:10, color:type?.color||'var(--text-muted)', background:(type?.color||'#5a5040')+'18', padding:'1px 5px', borderRadius:3 }}>{type?.name||'Doc'}</span>
                   </div>
-                  <div style={{ fontSize:13, color: theme.textSecondary, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{card.name}</div>
+                  <div style={{ fontSize:13, color: 'var(--text-secondary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{card.name}</div>
                 </div>
               )
             })}
           </div>
         </div>
       ) : (
-        <div style={{ textAlign:'center', paddingTop:60, color: theme.textDarker }}>
+        <div style={{ textAlign:'center', paddingTop:60, color: 'var(--text-darker)' }}>
           <div style={{ fontSize:40, marginBottom:16 }}>✦</div>
           <p style={{ fontSize:16, marginBottom:8 }}>Bienvenue dans votre monde</p>
           <p style={{ fontSize:13 }}>Créez votre premier document avec le bouton + dans la sidebar</p>
@@ -356,30 +313,30 @@ function MondesHome({ world, setWorld, cards, allTypes, theme, calendars, create
   )
 }
 
-function TopBar({ world, activeView, onSetView, cardCount, onWorldSelect, theme }) {
-  const pillStyle = { height:36, display:'flex', alignItems:'center', background: theme.bgBase + '0.55)', backdropFilter:'blur(40px) saturate(1.6)', WebkitBackdropFilter:'blur(40px) saturate(1.6)', borderRadius:12, border:`1px solid ${theme.borderColor}0.09)` }
+function TopBar({ world, activeView, onSetView, cardCount, onWorldSelect }) {
+  const pillStyle = { height:36, display:'flex', alignItems:'center', background: 'var(--bg-base-50)', backdropFilter:'blur(40px) saturate(1.6)', WebkitBackdropFilter:'blur(40px) saturate(1.6)', borderRadius:12, border:'1px solid var(--border-09)' }
   return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, gap:12 }}>
       <div onClick={onWorldSelect} style={{ ...pillStyle, gap:8, padding:'0 14px', cursor:'pointer', flexShrink:0 }}
         title="Changer de monde">
-        <div style={{ width:22, height:22, borderRadius:7, background:`linear-gradient(135deg,${theme.accent}55,${theme.accent}18)`, border:`1px solid ${theme.accent}28`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10 }}>✦</div>
-        <span style={{ fontFamily: theme.font, fontSize:12, fontWeight:600, color: theme.textSecondary }}>{world.name||'Mon Monde'}</span>
+        <div style={{ width:22, height:22, borderRadius:7, background:`linear-gradient(135deg,var(--accent)55,var(--accent)18)`, border:`1px solid var(--accent)28`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10 }}>✦</div>
+        <span style={{ fontFamily: 'var(--font)', fontSize:12, fontWeight:600, color: 'var(--text-secondary)' }}>{world.name||'Mon Monde'}</span>
       </div>
       <div style={{ ...pillStyle, gap:1, padding:'0 4px' }}>
         {NAV.map(n => {
           const active = activeView===n.id
           return (
-            <button key={n.id} onClick={() => onSetView(n.id)} style={{ display:'flex', alignItems:'center', gap:5, padding: active ? '5px 12px' : '5px 9px', borderRadius:9, border:'none', background: active ? theme.accentLight + '0.18)' : 'transparent', color: active ? theme.accent : 'rgba(255,255,255,0.7)', fontSize:12, cursor:'pointer', transition:'all 0.15s' }}
+            <button key={n.id} onClick={() => onSetView(n.id)} style={{ display:'flex', alignItems:'center', gap:5, padding: active ? '5px 12px' : '5px 9px', borderRadius:9, border:'none', background: active ? 'var(--accent-18)' : 'transparent', color: active ? 'var(--accent)' : 'rgba(255,255,255,0.7)', fontSize:12, cursor:'pointer', transition:'all 0.15s' }}
               onMouseEnter={e => { if(!active) e.currentTarget.style.color='rgba(255,255,255,0.95)' }}
               onMouseLeave={e => { if(!active) e.currentTarget.style.color='rgba(255,255,255,0.7)' }}>
               <Icon name={n.icon} size={13} />
-              {active && <span style={{ fontFamily: theme.fontBody }}>{n.label}</span>}
+              {active && <span style={{ fontFamily: 'var(--font-body)' }}>{n.label}</span>}
             </button>
           )
         })}
       </div>
       <div style={{ ...pillStyle, padding:'0 14px', flexShrink:0 }}>
-        <span style={{ fontSize:11, color: theme.textDarker }}>{cardCount} doc{cardCount!==1?'s':''}</span>
+        <span style={{ fontSize:11, color: 'var(--text-darker)' }}>{cardCount} doc{cardCount!==1?'s':''}</span>
       </div>
     </div>
   )

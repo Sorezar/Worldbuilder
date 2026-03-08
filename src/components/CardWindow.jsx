@@ -307,11 +307,13 @@ function PropField({ prop, value, onChange, cards, customTypes, onOpenCard, onCr
           </div>
         )
       }
-      return <InlineEdit value={value || ''} onChange={onChange} placeholder="—" style={{ display: 'block', padding: '4px 0' }} />
+      const textVal = Array.isArray(value) ? '' : (value || '')
+      return <InlineEdit value={textVal} onChange={onChange} placeholder="—" style={{ display: 'block', padding: '4px 0' }} />
     }
 
     if (prop.fieldType === FIELD_TYPES.DATE) {
-      return <DateField value={value||''} onChange={onChange} calendars={calendars||[]} />
+      const dateVal = Array.isArray(value) ? '' : (value || '')
+      return <DateField value={dateVal} onChange={onChange} calendars={calendars||[]} />
     }
     return <span style={{ color: 'var(--text-darker,#2e2e2e)', fontSize: 12 }}>—</span>
   }

@@ -142,7 +142,8 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
         <h3 style={{ fontFamily:"var(--font)", fontSize:15, color:'var(--text-secondary,#c0c0c0)', marginBottom:12, fontWeight:500 }}>Propriétés par défaut</h3>
         {props.length===0 && !addingProp && <p style={{ color:'var(--text-darker,#2e2e2e)', fontSize:12, marginBottom:10 }}>Aucune propriété</p>}
         <div style={{ display:'flex', flexDirection:'column', gap:4, marginBottom:8 }}>
-          {props.map(p => <PropRow key={p.id} prop={p} allTypes={allTypes} onRename={n=>renameProp(p.id,n)} onRemove={()=>removeProp(p.id)} />)}
+          {props.map(p => <PropRow key={p.id} prop={p} allTypes={allTypes} onRename={n=>renameProp(p.id,n)} onRemove={()=>removeProp(p.id)}
+            onEditProp={patch => { const updated = props.map(x => x.id===p.id ? { ...x, ...patch } : x); setProps(updated); onUpdate({ defaultProps:updated }) }} />)}
         </div>
         {addingProp
           ? <DropdownPropPicker allTypes={allTypes} onAdd={addProp} onCancel={() => setAddingProp(false)} />
@@ -167,19 +168,78 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
   )
 }
 
-// ─── PropRow — inline rename on click ─────────────────────────
-function PropRow({ prop, allTypes, onRename, onRemove }) {
+// ─── PropRow — inline rename on click + type/emoji editing ────
+function PropRow({ prop, allTypes, onRename, onRemove, onEditProp }) {
   const [editing, setEditing] = useState(false)
   const [draft,   setDraft]   = useState(prop.name)
+  const [showTypePicker, setShowTypePicker] = useState(false)
+  const pickerRef = useRef()
   const isRef    = prop.fieldType === FIELD_TYPES.CARD_REF
-  const badge    = isRef ? '🔗' : prop.fieldType==='number' ? '#' : prop.fieldType==='date' ? '📅' : 'T'
+  const emoji    = prop.emoji
+  const badge    = emoji || (isRef ? '🔗' : prop.fieldType==='number' ? '#' : prop.fieldType==='date' ? '📅' : 'T')
   const targets  = isRef && prop.targetTypeIds?.length
     ? prop.targetTypeIds.map(tid => allTypes.find(t=>t.id===tid)?.name||tid).join(', ')
     : null
   const commit = () => { if(draft.trim()&&draft.trim()!==prop.name) onRename(draft.trim()); else setDraft(prop.name); setEditing(false) }
+
+  useEffect(() => {
+    if (!showTypePicker) return
+    const h = e => { if (pickerRef.current && !pickerRef.current.contains(e.target)) setShowTypePicker(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [showTypePicker])
+
+  const SCALARS = [
+    { id:'text',   icon:'T',  label:'Texte',     color:'#8a8a8a' },
+    { id:'number', icon:'#',  label:'Numérique', color:'#60a5fa' },
+    { id:'date',   icon:'📅', label:'Date',      color:'#22c55e' },
+  ]
+  const creatableTypes = allTypes.filter(t => !t.virtual)
+  const roots = creatableTypes.filter(t => !t.parentId)
+
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 11px', background:'rgba(255,255,255,0.03)', borderRadius:7, border:'1px solid rgba(255,255,255,0.05)' }}>
-      <span style={{ fontSize:10, color:'var(--text-dark,#444444)', background:'rgba(255,255,255,0.04)', padding:'1px 6px', borderRadius:3, flexShrink:0 }}>{badge}</span>
+    <div style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 11px', background:'rgba(255,255,255,0.03)', borderRadius:7, border:'1px solid rgba(255,255,255,0.05)', position:'relative' }}>
+      <span onClick={() => setShowTypePicker(v => !v)} title="Changer le type"
+        style={{ fontSize:10, color:'var(--text-dark,#444444)', background: showTypePicker ? 'rgba(200,160,100,0.15)' : 'rgba(255,255,255,0.04)', padding:'1px 6px', borderRadius:3, flexShrink:0, cursor:'pointer', transition:'background 0.1s' }}>{badge}</span>
+      {showTypePicker && (
+        <div ref={pickerRef} style={{ position:'absolute', top:'100%', left:0, zIndex:600, marginTop:4, background:'rgba(10,6,1,0.92)', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid rgba(255,200,120,0.14)', borderRadius:12, overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.7)', width:220 }}>
+          <div style={{ padding:'6px 10px 4px', fontSize:10, color:'var(--text-darker,#2e2e2e)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Type</div>
+          {SCALARS.map(s => {
+            const active = !isRef && prop.fieldType === s.id
+            return <TypeMenuItem key={s.id} icon={s.icon} label={s.label} color={s.color} active={active}
+              onClick={() => { onEditProp({ fieldType: s.id, targetTypeIds: undefined, multiple: false }); setShowTypePicker(false) }} />
+          })}
+          <div style={{ height:1, background:'rgba(255,255,255,0.05)', margin:'4px 8px' }} />
+          <div style={{ padding:'4px 10px 2px', fontSize:10, color:'var(--text-darker,#2e2e2e)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Cartes</div>
+          <div style={{ maxHeight:200, overflowY:'auto' }}>
+            {roots.map(rt => {
+              const children = creatableTypes.filter(t => t.parentId === rt.id)
+              const active = isRef && prop.targetTypeIds?.includes(rt.id)
+              return <React.Fragment key={rt.id}>
+                <TypeMenuItem icon={rt.icon} label={rt.name} color={rt.color} active={active}
+                  onClick={() => { onEditProp({ fieldType:'card_ref', targetTypeIds:[rt.id], multiple:true }); setShowTypePicker(false) }} />
+                {children.map(ch => {
+                  const chActive = isRef && prop.targetTypeIds?.includes(ch.id)
+                  return <TypeMenuItem key={ch.id} icon={ch.icon} label={ch.name} color={ch.color} active={chActive} indent
+                    onClick={() => { onEditProp({ fieldType:'card_ref', targetTypeIds:[ch.id], multiple:true }); setShowTypePicker(false) }} />
+                })}
+              </React.Fragment>
+            })}
+          </div>
+          <div style={{ height:1, background:'rgba(255,255,255,0.05)', margin:'4px 8px' }} />
+          <div style={{ padding:'4px 10px 2px', fontSize:10, color:'var(--text-darker,#2e2e2e)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Emoji</div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(8,1fr)', gap:1, padding:'4px 8px 8px', maxHeight:100, overflowY:'auto' }}>
+            {['T','#','📅','🔗','👤','📍','⚔️','💎','📅','📖','🌿','📜','🛡','🔮','✨','🌸'].map((em,i) => (
+              <button key={i} onClick={() => { onEditProp({ emoji: em }); setShowTypePicker(false) }}
+                style={{ background: prop.emoji===em ? 'rgba(200,160,100,0.2)' : 'transparent', border:'none', borderRadius:4, cursor:'pointer', fontSize:12, padding:'4px 0', color:'#c0c0c0', transition:'background 0.08s' }}
+                onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.08)'}
+                onMouseLeave={e => { if(prop.emoji!==em) e.currentTarget.style.background='transparent' }}>
+                {em}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {editing
         ? <input autoFocus value={draft} onChange={e=>setDraft(e.target.value)} onBlur={commit}
             onKeyDown={e => { if(e.key==='Enter') commit(); if(e.key==='Escape') { setDraft(prop.name); setEditing(false) } }}
@@ -191,6 +251,18 @@ function PropRow({ prop, allTypes, onRename, onRemove }) {
       {prop.multiple && <span style={{ fontSize:9, color:'var(--text-dark,#444444)', flexShrink:0 }}>×n</span>}
       <button onClick={onRemove} style={{ background:'none', border:'none', color:'var(--text-darker,#2e2e2e)', cursor:'pointer', padding:'0 2px', fontSize:10, lineHeight:1, flexShrink:0 }}
         onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} onMouseLeave={e=>e.currentTarget.style.color='#2e2e2e'}>✕</button>
+    </div>
+  )
+}
+
+function TypeMenuItem({ icon, label, color, active, indent, onClick }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <div onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ display:'flex', alignItems:'center', gap:8, padding:`5px 10px 5px ${indent ? 26 : 10}px`, cursor:'pointer', fontSize: indent ? 11 : 12, color: active ? 'var(--accent,#c8a064)' : 'var(--text-muted,#8a8a8a)', background: hov ? 'rgba(255,255,255,0.05)' : 'transparent', transition:'background 0.08s' }}>
+      <span style={{ width:16, textAlign:'center', fontSize: indent ? 12 : 13, flexShrink:0 }}>{icon}</span>
+      <span style={{ flex:1 }}>{label}</span>
+      {active && <Icon name="check" size={10} style={{ color:'var(--accent,#c8a064)', flexShrink:0 }} />}
     </div>
   )
 }

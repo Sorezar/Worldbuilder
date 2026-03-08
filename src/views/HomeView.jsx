@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Icon, Btn, Modal } from '../components/ui.jsx'
 import { BUILTIN_TYPES } from '../data/types.js'
-import { THEMES, TITLE_FONTS, BODY_FONTS, GENRE_PRESETS } from '../store/useStore.js'
+import { TITLE_FONTS, BODY_FONTS, GENRE_PRESETS, resolveTheme } from '../store/useStore.js'
 
 export default function HomeView({ world, setWorld, cards, customTypes, onOpenCard, onCreateCard, onShowTypes }) {
   const [editingWelcome, setEditingWelcome] = useState(false)
@@ -219,12 +219,11 @@ function ThemeModal({ world, onUpdateWorld, onClose }) {
       id: Date.now().toString(36),
       name,
       bgImage: world.bgImage || '',
-      theme: world.theme || 'warm',
+      accentColor: world.accentColor || '#c8a064',
       fontTitle: world.fontTitle || 'Lora',
       fontBody: world.fontBody || 'DM Sans',
       bgBrightness: world.bgBrightness ?? 0.45,
       colorMode: world.colorMode || 'night',
-      accentColor: world.accentColor || '',
     }
     const updated = [preset, ...customPresets]
     setCustomPresets(updated)
@@ -237,10 +236,8 @@ function ThemeModal({ world, onUpdateWorld, onClose }) {
     saveCustomPresets(updated)
   }
 
-  const applyPreset = ({ bgImage, theme, fontTitle, fontBody, bgBrightness, colorMode, accentColor }) => {
-    const patch = { bgImage, theme, fontTitle, fontBody, bgBrightness, colorMode }
-    if (accentColor) patch.accentColor = accentColor
-    onUpdateWorld({ ...world, ...patch })
+  const applyPreset = ({ bgImage, accentColor, fontTitle, fontBody, bgBrightness, colorMode }) => {
+    onUpdateWorld({ ...world, bgImage, accentColor: accentColor || '#c8a064', fontTitle, fontBody, bgBrightness, colorMode })
   }
 
   return (
@@ -380,33 +377,34 @@ function ExplorerContent({ world, onApply, customPresets, onDeletePreset }) {
       {/* Preset grid — wide cards like 17.png */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:12 }}>
         {filtered.map((p, idx) => {
-          const th = THEMES[p.theme] || THEMES.warm
+          const accent = p.accentColor || '#c8a064'
+          const { derived } = resolveTheme({ accentColor: accent, bgColor: '#000000', fontTitle: p.fontTitle, fontBody: p.fontBody })
           const titleFont = TITLE_FONTS.find(f => f.id === p.fontTitle)
-          const isActive = world.bgImage === p.bgImage && world.theme === p.theme && world.fontTitle === p.fontTitle
+          const isActive = world.bgImage === p.bgImage && world.accentColor === accent && world.fontTitle === p.fontTitle
           const isCustom = !!p.id
           return (
             <div key={p.id || idx} onClick={() => onApply(p)}
               style={{
                 borderRadius:14, overflow:'hidden', cursor:'pointer',
-                border: isActive ? `2px solid ${th.accent}` : '2px solid rgba(255,255,255,0.04)',
+                border: isActive ? `2px solid ${accent}` : '2px solid rgba(255,255,255,0.04)',
                 transition:'all 0.18s', position:'relative',
               }}
               onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(0,0,0,0.4)'; if(!isActive) e.currentTarget.style.borderColor='rgba(255,255,255,0.15)' }}
               onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; if(!isActive) e.currentTarget.style.borderColor='rgba(255,255,255,0.04)' }}
             >
               {/* Image */}
-              <div style={{ height:110, backgroundImage: p.bgImage ? `url(${p.bgImage})` : undefined, backgroundSize:'cover', backgroundPosition:'center', position:'relative', background: p.bgImage ? undefined : th.defaultBg }}>
+              <div style={{ height:110, backgroundImage: p.bgImage ? `url(${p.bgImage})` : undefined, backgroundSize:'cover', backgroundPosition:'center', position:'relative', background: p.bgImage ? undefined : derived.defaultBg }}>
                 <div style={{ position:'absolute', inset:0, background:`linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.1) 60%)` }} />
                 <div style={{ position:'absolute', bottom:10, left:12, right:12 }}>
                   <div style={{ fontFamily: titleFont?.css, fontSize:15, fontWeight:600, color:'#fff', textShadow:'0 1px 6px rgba(0,0,0,0.9)', lineHeight:1.2, marginBottom:3 }}>{p.name}</div>
                   <div style={{ display:'flex', gap:3 }}>
-                    {[th.accent, th.textPrimary, th.textMuted].map((c,i) => (
+                    {[accent, '#f0f0f0', '#8a8a8a'].map((c,i) => (
                       <div key={i} style={{ width:8, height:8, borderRadius:'50%', background:c, border:'1px solid rgba(0,0,0,0.3)' }} />
                     ))}
                   </div>
                 </div>
                 {isActive && (
-                  <div style={{ position:'absolute', top:8, right:8, background:th.accent, borderRadius:6, padding:'2px 8px', fontSize:10, fontWeight:600, color:'#000' }}>Actif</div>
+                  <div style={{ position:'absolute', top:8, right:8, background:accent, borderRadius:6, padding:'2px 8px', fontSize:10, fontWeight:600, color:'#000' }}>Actif</div>
                 )}
                 {isCustom && !isActive && (
                   <button onClick={e => { e.stopPropagation(); onDeletePreset(p.id) }}
@@ -429,7 +427,9 @@ function EditionContent({ world, onUpdate, onSavePreset }) {
   const [bgUrl, setBgUrl] = useState(world.bgImage || '')
   const [presetName, setPresetName] = useState('')
   const [showSaveInput, setShowSaveInput] = useState(false)
-  const theme = THEMES[world.theme || 'warm'] || THEMES.warm
+  const accent = world.accentColor || '#c8a064'
+  const bgColor = world.bgColor || '#000000'
+  const { derived } = resolveTheme(world)
   const set = patch => onUpdate({ ...world, ...patch })
 
   const handleSave = () => {
@@ -447,7 +447,7 @@ function EditionContent({ world, onUpdate, onSavePreset }) {
         <div style={{ width:200, height:260, borderRadius:14, overflow:'hidden', border:'1px solid rgba(255,255,255,0.1)', position:'relative', background:'rgba(0,0,0,0.3)' }}>
           {world.bgImage
             ? <img src={world.bgImage} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', filter:`brightness(${world.bgBrightness ?? 0.45})` }} />
-            : <div style={{ width:'100%', height:'100%', background: theme.defaultBg, display:'flex', alignItems:'center', justifyContent:'center', color:'#444', fontSize:13 }}>Aucun fond</div>
+            : <div style={{ width:'100%', height:'100%', background: derived.defaultBg, display:'flex', alignItems:'center', justifyContent:'center', color:'#444', fontSize:13 }}>Aucun fond</div>
           }
         </div>
 
@@ -519,17 +519,37 @@ function EditionContent({ world, onUpdate, onSavePreset }) {
         </div>
       </div>
 
-      {/* Bottom bar (absolute) — brightness slider + save preset */}
+      {/* Bottom bar (absolute) — color pickers + brightness slider + save preset */}
       <div style={{ position:'fixed', bottom:24, left:24, right:24, display:'flex', alignItems:'center', gap:14, padding:'10px 20px', background:'rgba(0,0,0,0.6)', backdropFilter:'blur(20px)', borderRadius:14, border:'1px solid rgba(255,255,255,0.06)' }}>
+        {/* Accent color picker */}
+        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+          <span style={{ fontSize:11, color:'#555' }}>Accent</span>
+          <label style={{ width:28, height:28, borderRadius:8, border:`2px solid ${accent}`, cursor:'pointer', overflow:'hidden', position:'relative', background: accent }}>
+            <input type="color" value={accent} onChange={e => set({ accentColor: e.target.value })}
+              style={{ position:'absolute', inset:-4, width:'calc(100% + 8px)', height:'calc(100% + 8px)', cursor:'pointer', opacity:0 }} />
+          </label>
+        </div>
+
+        {/* Background color picker */}
+        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+          <span style={{ fontSize:11, color:'#555' }}>Fond</span>
+          <label style={{ width:28, height:28, borderRadius:8, border:'2px solid rgba(255,255,255,0.15)', cursor:'pointer', overflow:'hidden', position:'relative', background: bgColor }}>
+            <input type="color" value={bgColor} onChange={e => set({ bgColor: e.target.value })}
+              style={{ position:'absolute', inset:-4, width:'calc(100% + 8px)', height:'calc(100% + 8px)', cursor:'pointer', opacity:0 }} />
+          </label>
+        </div>
+
+        <div style={{ width:1, height:20, background:'rgba(255,255,255,0.08)' }} />
+
         <span style={{ fontFamily: TITLE_FONTS.find(f=>f.id===world.fontTitle)?.css, fontSize:14, fontWeight:600, color:'#888' }}>Aa</span>
         <input type="range" min={0.1} max={0.9} step={0.05}
           value={world.bgBrightness ?? 0.45}
           onChange={e => set({ bgBrightness: parseFloat(e.target.value) })}
-          style={{ flex:1, accentColor: world.accentColor || theme.accent, cursor:'pointer', height:4 }}
+          style={{ flex:1, accentColor: accent, cursor:'pointer', height:4 }}
         />
         <span style={{ fontSize:11, color:'#555', minWidth:28, textAlign:'right' }}>{Math.round((world.bgBrightness ?? 0.45) * 100)}%</span>
 
-        <div style={{ width:1, height:20, background:'rgba(255,255,255,0.08)', marginLeft:4 }} />
+        <div style={{ width:1, height:20, background:'rgba(255,255,255,0.08)' }} />
 
         {showSaveInput ? (
           <div style={{ display:'flex', alignItems:'center', gap:6 }}>
@@ -539,7 +559,7 @@ function EditionContent({ world, onUpdate, onSavePreset }) {
               style={{ width:140, padding:'5px 10px', borderRadius:8, border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.06)', color:'#ddd', fontSize:11, outline:'none' }}
             />
             <button onClick={handleSave}
-              style={{ padding:'5px 12px', borderRadius:8, border:'none', background: world.accentColor || theme.accent, color:'#000', fontSize:11, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}
+              style={{ padding:'5px 12px', borderRadius:8, border:'none', background: accent, color:'#000', fontSize:11, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}
             ><Icon name="check" size={11} /> Sauvegarder</button>
             <button onClick={() => setShowSaveInput(false)}
               style={{ padding:'5px 8px', borderRadius:8, border:'1px solid rgba(255,255,255,0.1)', background:'transparent', color:'#666', fontSize:11, cursor:'pointer' }}

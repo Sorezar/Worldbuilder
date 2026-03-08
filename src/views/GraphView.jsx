@@ -226,7 +226,8 @@ export default function GraphView({ cards, customTypes, onOpenCard }) {
 }
 
 function TypeLegend({ customTypes }) {
-  const all = [...BUILTIN_TYPES.filter(t => !t.virtual && !t.parentId), ...(customTypes || []).filter(t => !t.parentId)]
+  const ct = customTypes || []
+  const all = [...BUILTIN_TYPES.filter(t => !t.virtual && !t.parentId && !ct.some(c => c.id === t.id)), ...ct.filter(t => !t.parentId)]
   return (
     <div style={{ position: 'absolute', bottom: 16, left: 14, zIndex: 10, background: 'rgba(10,6,1,0.7)', backdropFilter: 'blur(30px) saturate(1.4)', WebkitBackdropFilter: 'blur(30px) saturate(1.4)', border: '1px solid rgba(255,200,120,0.1)', borderRadius: 14, padding: '11px 15px' }}>
       <div style={{ fontSize: 10, color: 'var(--text-dark,#444444)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7 }}>Types</div>

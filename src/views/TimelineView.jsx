@@ -13,7 +13,7 @@ function getIcon(typeId, customTypes) {
 
 // All dates → absolute days since 2000-01-01
 function parseDateKey(dateStr, calendars) {
-  if (!dateStr) return Infinity
+  if (!dateStr || typeof dateStr !== 'string') return Infinity
   if (dateStr.startsWith('cal:')) {
     const parts = dateStr.split(':')
     const cal = calendars?.find(c=>c.id===parts[1])
@@ -108,7 +108,7 @@ export default function TimelineView({ cards, customTypes, calendars, onOpenCard
         const fieldType = override?.fieldType || p.fieldType
         if (fieldType !== 'date') return
         const val = card.props?.[p.id]
-        if (!val) return
+        if (!val || typeof val !== 'string') return
         const key = card.id + '_' + p.id
         if (seen.has(key)) return
         seen.add(key)
