@@ -30,6 +30,7 @@ export default function ChartsView({ cards, customTypes }) {
   const [selectedStats,   setSelectedStats]   = useState([])
   const [chartType,       setChartType]       = useState('radar')
   const [search,          setSearch]          = useState('')
+  const [collapsedTypes,  setCollapsedTypes]  = useState({})
 
   const allTypes = [...BUILTIN_TYPES, ...(customTypes||[])]
 
@@ -41,12 +42,17 @@ export default function ChartsView({ cards, customTypes }) {
     cardsWithStats.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()))
   , [cardsWithStats, search])
 
-  // Auto-select first 4 cards on mount / when cards change
-  useEffect(() => {
-    if (selectedCardIds.length === 0 && cardsWithStats.length > 0) {
-      setSelectedCardIds(cardsWithStats.slice(0,4).map(c => c.id))
-    }
-  }, [cardsWithStats.length])
+  const groupedByType = useMemo(() => {
+    const groups = []
+    const map = new Map()
+    visibleCards.forEach(card => {
+      if (!map.has(card.typeId)) { map.set(card.typeId, []); groups.push(card.typeId) }
+      map.get(card.typeId).push(card)
+    })
+    return groups.map(typeId => ({ typeId, type: allTypes.find(t => t.id === typeId), cards: map.get(typeId) }))
+  }, [visibleCards, allTypes])
+
+  const toggleTypeCollapse = typeId => setCollapsedTypes(prev => ({ ...prev, [typeId]: !prev[typeId] }))
 
   const statKeyLabels = useMemo(() => {
     const labels = {}
@@ -67,12 +73,12 @@ export default function ChartsView({ cards, customTypes }) {
     return [...keys]
   }, [cards, selectedCardIds, customTypes])
 
-  const activeStats = selectedStats.length > 0 ? selectedStats : allStatKeys.slice(0,6)
+  const activeStats = selectedStats
   const toggleCard = id => setSelectedCardIds(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev,id])
   const toggleStat = k  => setSelectedStats (prev => prev.includes(k)  ? prev.filter(x=>x!==k)  : [...prev,k])
 
   const chartData = useMemo(() => {
-    const targets = selectedCardIds.length > 0 ? cards.filter(c => selectedCardIds.includes(c.id)) : cardsWithStats.slice(0,6)
+    const targets = cards.filter(c => selectedCardIds.includes(c.id))
     return targets
       .filter(card => { const np = getNumericProps(card, getEffectiveProps(card.typeId, customTypes)); return activeStats.some(k => np[k]!==undefined && !isNaN(np[k])) })
       .map((card, i) => ({
@@ -98,19 +104,34 @@ export default function ChartsView({ cards, customTypes }) {
           {visibleCards.length === 0 && (
             <p style={{ color:'var(--text-darker,#2e2e2e)', fontSize:12, padding:'10px 6px' }}>Aucune carte avec stats numériques</p>
           )}
-          {visibleCards.map((card, i) => {
-            const isSel = selectedCardIds.includes(card.id)
-            const color = CHART_COLORS[cardsWithStats.indexOf(card) % CHART_COLORS.length]
-            const type  = allTypes.find(t => t.id===card.typeId)
+          {groupedByType.map(({ typeId, type, cards: groupCards }) => {
+            const collapsed = !!collapsedTypes[typeId]
             return (
-              <div key={card.id} onClick={() => toggleCard(card.id)}
-                style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 8px', borderRadius:6, cursor:'pointer', marginBottom:2, transition:'all 0.1s', background: isSel?color+'14':'transparent', border:`1px solid ${isSel?color+'30':'transparent'}` }}
-                onMouseEnter={e => { if(!isSel) e.currentTarget.style.background='rgba(255,255,255,0.04)' }}
-                onMouseLeave={e => { if(!isSel) e.currentTarget.style.background='transparent' }}>
-                {isSel && <div style={{ width:8, height:8, borderRadius:'50%', background:color, flexShrink:0 }} />}
-                {card.image ? <img src={card.image} alt="" style={{ width:22, height:22, borderRadius:5, objectFit:'cover', flexShrink:0 }} />
-                  : <span style={{ fontSize:14, width:22, textAlign:'center', flexShrink:0 }}>{type?.icon||'📄'}</span>}
-                <span style={{ fontSize:12, color: isSel?'var(--text-primary,#f0f0f0)':'var(--text-muted,#8a8a8a)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{card.name}</span>
+              <div key={typeId} style={{ marginBottom:4 }}>
+                <div onClick={() => toggleTypeCollapse(typeId)}
+                  style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 8px', cursor:'pointer', borderRadius:5, transition:'background 0.1s' }}
+                  onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.03)'}
+                  onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                  <Icon name={collapsed ? 'chevron_right' : 'chevron_down'} size={9} style={{ color:'var(--text-dark,#444444)', flexShrink:0 }} />
+                  <span style={{ fontSize:13, flexShrink:0 }}>{type?.icon||'📄'}</span>
+                  <span style={{ fontSize:11, color:'var(--text-dim,#5a5a5a)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{type?.name||typeId}</span>
+                  <span style={{ fontSize:10, color:'var(--text-darker,#2e2e2e)', flexShrink:0 }}>{groupCards.length}</span>
+                </div>
+                {!collapsed && groupCards.map(card => {
+                  const isSel = selectedCardIds.includes(card.id)
+                  const color = CHART_COLORS[cardsWithStats.indexOf(card) % CHART_COLORS.length]
+                  return (
+                    <div key={card.id} onClick={() => toggleCard(card.id)}
+                      style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 8px 5px 26px', borderRadius:6, cursor:'pointer', marginBottom:1, transition:'all 0.1s', background: isSel?color+'14':'transparent', border:`1px solid ${isSel?color+'30':'transparent'}` }}
+                      onMouseEnter={e => { if(!isSel) e.currentTarget.style.background='rgba(255,255,255,0.04)' }}
+                      onMouseLeave={e => { if(!isSel) e.currentTarget.style.background='transparent' }}>
+                      {isSel && <div style={{ width:8, height:8, borderRadius:'50%', background:color, flexShrink:0 }} />}
+                      {card.image ? <img src={card.image} alt="" style={{ width:20, height:20, borderRadius:4, objectFit:'cover', flexShrink:0 }} />
+                        : null}
+                      <span style={{ fontSize:12, color: isSel?'var(--text-primary,#f0f0f0)':'var(--text-muted,#8a8a8a)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{card.name}</span>
+                    </div>
+                  )
+                })}
               </div>
             )
           })}
@@ -118,7 +139,17 @@ export default function ChartsView({ cards, customTypes }) {
 
         {allStatKeys.length > 0 && (
           <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', padding:'10px 12px' }}>
-            <div style={{ fontSize:11, color:'var(--text-dim,#5a5a5a)', marginBottom:8 }}>Statistiques</div>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+              <span style={{ fontSize:11, color:'var(--text-dim,#5a5a5a)' }}>Statistiques</span>
+              <span onClick={() => {
+                const allSelected = allStatKeys.every(k => activeStats.includes(k))
+                setSelectedStats(allSelected ? [] : [...allStatKeys])
+              }} style={{ fontSize:10, color:'var(--text-dark,#444444)', cursor:'pointer', transition:'color 0.1s' }}
+                onMouseEnter={e => e.currentTarget.style.color='var(--accent,#c8a064)'}
+                onMouseLeave={e => e.currentTarget.style.color='var(--text-dark,#444444)'}>
+                {allStatKeys.every(k => activeStats.includes(k)) ? 'Aucun' : 'Tout'}
+              </span>
+            </div>
             <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
               {allStatKeys.map(k => (
                 <label key={k} style={{ display:'flex', alignItems:'center', gap:7, cursor:'pointer', fontSize:12, color: activeStats.includes(k)?'#c0c0c0':'#5a5a5a' }}>
@@ -148,7 +179,7 @@ export default function ChartsView({ cards, customTypes }) {
             <p style={{ fontSize:12 }}>Ajoutez des propriétés Numérique à vos cartes.</p>
           </div>
         ) : chartData.length === 0 ? (
-          <div style={{ textAlign:'center', paddingTop:60, color:'var(--text-darker,#2e2e2e)', fontSize:14 }}>Sélectionnez des cartes à gauche</div>
+          <div style={{ textAlign:'center', paddingTop:60, color:'var(--text-primary,#f0f0f0)', fontSize:14 }}>Sélectionnez des cartes à gauche</div>
         ) : (
           <>
             <div style={{ display:'flex', gap:12, flexWrap:'wrap', marginBottom:24 }}>
