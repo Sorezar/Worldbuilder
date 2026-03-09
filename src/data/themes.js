@@ -91,6 +91,11 @@ export function resolveTheme(world) {
   const { r, g, b } = hexToRgb(accentHex)
   const accentRgba = `rgba(${r},${g},${b},`
 
+  // Danger rgba prefix
+  const dangerHex = '#e05040'
+  const d = hexToRgb(dangerHex)
+  const dangerRgba = `rgba(${d.r},${d.g},${d.b},`
+
   // Resolve brightness / color mode
   const colorMode = world.colorMode || 'night'
   const sysDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -100,29 +105,54 @@ export function resolveTheme(world) {
 
   // CSS custom properties
   const vars = {
+    // ── Accent scale ──
     '--accent': accentHex,
+    '--accent-03': accentRgba + '0.03)',
     '--accent-10': accentRgba + '0.1)',
+    '--accent-12': accentRgba + '0.12)',
     '--accent-15': accentRgba + '0.15)',
     '--accent-18': accentRgba + '0.18)',
+    '--accent-20': accentRgba + '0.2)',
     '--accent-22': accentRgba + '0.22)',
+    '--accent-25': accentRgba + '0.25)',
+    '--accent-30': accentRgba + '0.3)',
+    '--accent-40': accentRgba + '0.4)',
+    '--accent-50': accentRgba + '0.5)',
+    '--accent-60': accentRgba + '0.6)',
+    // ── Text scale ──
     '--text-primary': TEXT.textPrimary,
     '--text-secondary': TEXT.textSecondary,
     '--text-muted': TEXT.textMuted,
     '--text-dim': TEXT.textDim,
     '--text-dark': TEXT.textDark,
     '--text-darker': TEXT.textDarker,
+    // ── Danger scale ──
+    '--danger': dangerHex,
+    '--danger-muted': '#a04030',
+    '--danger-06': dangerRgba + '0.06)',
+    '--danger-10': dangerRgba + '0.1)',
+    '--danger-12': dangerRgba + '0.12)',
+    '--danger-18': dangerRgba + '0.18)',
+    '--danger-30': dangerRgba + '0.3)',
+    // ── Surfaces (derived from accent + bg) ──
+    '--bg-deep': '#1a1208',
     '--bg-base-35': derived.bgBase + '0.35)',
     '--bg-base-50': derived.bgBase + '0.5)',
     '--bg-base-60': derived.bgBase + '0.6)',
     '--bg-panel-55': derived.bgPanel + '0.55)',
+    '--bg-panel-80': derived.bgPanel + '0.8)',
     '--bg-panel-85': derived.bgPanel + '0.85)',
+    '--bg-panel-90': derived.bgPanel + '0.9)',
     '--bg-panel-92': derived.bgPanel + '0.92)',
+    '--bg-panel-95': derived.bgPanel + '0.95)',
     '--bg-overlay-50': derived.bgOverlay + '0.5)',
+    // ── Borders (derived from accent) ──
     '--border-06': derived.borderColor + '0.06)',
     '--border-09': derived.borderColor + '0.09)',
     '--border-10': derived.borderColor + '0.1)',
     '--border-14': derived.borderColor + '0.14)',
     '--border-15': derived.borderColor + '0.15)',
+    // ── Fonts ──
     '--font': fontTitle,
     '--font-body': fontBody,
   }

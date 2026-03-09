@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import { useStore, resolveTheme } from './store/useStore.js'
 import { BUILTIN_TYPES } from './data/types.js'
 import Sidebar from './components/Sidebar.jsx'
@@ -98,10 +98,16 @@ export default function App() {
 
   const bg = world.bgImage
   const inMondes = activeView === 'mondes'
-  const { vars: themeVars, derived, isDark, bgBrightness } = resolveTheme(world)
+  const { vars: themeVars, derived, isDark, bgBrightness } = useMemo(() => resolveTheme(world), [world.accentColor, world.bgColor, world.fontTitle, world.fontBody, world.bgBrightness, world.colorMode])
+
+  // Apply theme CSS variables on :root so portals (modals, context menus) inherit them
+  useEffect(() => {
+    const root = document.documentElement
+    Object.entries(themeVars).forEach(([k, v]) => root.style.setProperty(k, v))
+  }, [themeVars])
 
   return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', overflow:'hidden', position:'relative', ...themeVars }}>
+    <div style={{ height:'100vh', display:'flex', flexDirection:'column', overflow:'hidden', position:'relative' }}>
       {bg ? (
         <>
           <div style={{ position:'fixed', inset:0, zIndex:0, backgroundImage:`url(${bg})`, backgroundSize:'cover', backgroundPosition:'center', filter:`blur(8px) brightness(${bgBrightness})`, transform:'scale(1.08)' }} />
@@ -201,15 +207,15 @@ function WorldSelector({ worlds, activeWorldId, onSelect, onClose, onCreate, onD
           <div key={w.id} onClick={() => onSelect(w.id)}
             style={{
               display:'flex', alignItems:'center', gap:14, padding:'16px 20px', borderRadius:14, cursor:'pointer',
-              background: w.id === activeWorldId ? 'var(--accent-10,rgba(200,160,100,0.12))' : 'rgba(255,255,255,0.04)',
-              border: w.id === activeWorldId ? '1px solid var(--accent-22,rgba(200,160,100,0.25))' : '1px solid rgba(255,255,255,0.08)',
+              background: w.id === activeWorldId ? 'var(--accent-10)' : 'rgba(255,255,255,0.04)',
+              border: w.id === activeWorldId ? '1px solid var(--accent-22)' : '1px solid rgba(255,255,255,0.08)',
               transition:'all 0.12s',
             }}
             onMouseEnter={e => { if (w.id !== activeWorldId) e.currentTarget.style.background='rgba(255,255,255,0.07)' }}
             onMouseLeave={e => { if (w.id !== activeWorldId) e.currentTarget.style.background='rgba(255,255,255,0.04)' }}>
             {w.bgImage
               ? <img src={w.bgImage} alt="" style={{ width:40, height:40, borderRadius:8, objectFit:'cover' }} />
-              : <div style={{ width:40, height:40, borderRadius:8, background:'var(--accent-15,rgba(200,160,100,0.15))', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>✦</div>
+              : <div style={{ width:40, height:40, borderRadius:8, background:'var(--accent-15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>✦</div>
             }
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontSize:15, fontWeight:600, color:'var(--text-primary,#f0f0f0)', fontFamily:"var(--font)" }}>{w.name}</div>
@@ -218,7 +224,7 @@ function WorldSelector({ worlds, activeWorldId, onSelect, onClose, onCreate, onD
             {worlds.length > 1 && (
               <button onClick={e => { e.stopPropagation(); setConfirmDeleteId(w.id) }}
                 style={{ background:'none', border:'none', color:'var(--text-darker,#2e2e2e)', cursor:'pointer', padding:4 }}
-                onMouseEnter={e => e.currentTarget.style.color='#e05040'} onMouseLeave={e => e.currentTarget.style.color='var(--text-darker,#2e2e2e)'}>
+                onMouseEnter={e => e.currentTarget.style.color='var(--danger,#e05040)'} onMouseLeave={e => e.currentTarget.style.color='var(--text-darker,#2e2e2e)'}>
                 <Icon name="trash" size={13} />
               </button>
             )}
@@ -228,11 +234,11 @@ function WorldSelector({ worlds, activeWorldId, onSelect, onClose, onCreate, onD
       <button onClick={() => { const w = onCreate(); onSelect(w.id) }}
         style={{
           display:'flex', alignItems:'center', gap:8, padding:'12px 24px', borderRadius:12,
-          background:'var(--accent-10,rgba(200,160,100,0.1))', border:'1px solid var(--accent-22,rgba(200,160,100,0.2))',
+          background:'var(--accent-10)', border:'1px solid var(--accent-22)',
           color:'var(--accent,#c8a064)', fontSize:13, cursor:'pointer', transition:'all 0.12s',
         }}
-        onMouseEnter={e => e.currentTarget.style.background='var(--accent-15,rgba(200,160,100,0.2))'}
-        onMouseLeave={e => e.currentTarget.style.background='var(--accent-10,rgba(200,160,100,0.1))'}>
+        onMouseEnter={e => e.currentTarget.style.background='var(--accent-15)'}
+        onMouseLeave={e => e.currentTarget.style.background='var(--accent-10)'}>
         <Icon name="plus" size={14} /> Créer un nouveau monde
       </button>
 
@@ -241,7 +247,7 @@ function WorldSelector({ worlds, activeWorldId, onSelect, onClose, onCreate, onD
         <div onClick={e => e.stopPropagation()} style={{
           position:'fixed', inset:0, zIndex:910, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center',
         }}>
-          <div style={{ background:'rgba(12,8,2,0.95)', backdropFilter:'blur(40px)', border:'1px solid rgba(255,200,120,0.14)', borderRadius:16, padding:'28px 32px', width:340, boxShadow:'0 16px 48px rgba(0,0,0,0.7)' }}>
+          <div style={{ background:'var(--bg-panel-95,rgba(12,8,2,0.95))', backdropFilter:'blur(40px)', border:'1px solid var(--border-14,rgba(255,200,120,0.14))', borderRadius:16, padding:'28px 32px', width:340, boxShadow:'0 16px 48px rgba(0,0,0,0.7)' }}>
             <div style={{ fontSize:15, fontWeight:600, color:'var(--text-primary,#f0f0f0)', marginBottom:10, fontFamily:'var(--font)' }}>Supprimer ce monde ?</div>
             <p style={{ fontSize:13, color:'var(--text-dim,#5a5a5a)', lineHeight:1.5, marginBottom:20 }}>
               Le monde <strong style={{ color:'var(--text-secondary,#c0c0c0)' }}>"{worldToDelete.name}"</strong> et toutes ses données seront supprimés. Cette action est irréversible.
@@ -252,7 +258,7 @@ function WorldSelector({ worlds, activeWorldId, onSelect, onClose, onCreate, onD
                 Annuler
               </button>
               <button onClick={() => { onDelete(confirmDeleteId); setConfirmDeleteId(null) }}
-                style={{ padding:'8px 16px', borderRadius:8, border:'1px solid rgba(239,68,68,0.3)', background:'rgba(239,68,68,0.12)', color:'#ef4444', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                style={{ padding:'8px 16px', borderRadius:8, border:'1px solid var(--danger-30)', background:'var(--danger-12)', color:'var(--danger,#e05040)', fontSize:12, fontWeight:600, cursor:'pointer' }}>
                 Supprimer
               </button>
             </div>

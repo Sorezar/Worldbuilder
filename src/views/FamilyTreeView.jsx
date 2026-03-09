@@ -301,7 +301,7 @@ export default function FamilyTreeView({ card, cards, customTypes, allTypes, onU
               return (
                 <g key={node.id}>
                   <rect x={node.x} y={node.y} width={NODE_W} height={NODE_H} rx={12}
-                    fill="rgba(10,6,1,0.85)" stroke={isConnFrom ? '#f59e0b' : isSel ? '#c8a064' : 'rgba(255,200,120,0.15)'}
+                    fill="var(--bg-panel-85,rgba(10,6,1,0.85))" stroke={isConnFrom ? '#f59e0b' : isSel ? 'var(--accent,#c8a064)' : 'var(--border-14,rgba(255,200,120,0.15))'}
                     strokeWidth={isSel || isConnFrom ? 2 : 1}
                     onMouseDown={e => handleNodeMouseDown(e, node.id)}
                     style={{ cursor: tool === 'connect' ? 'crosshair' : 'pointer' }}
@@ -312,7 +312,7 @@ export default function FamilyTreeView({ card, cards, customTypes, allTypes, onU
                         <image href={refCard.image} x={node.x + 10} y={node.y + 10} width={44} height={44}
                           clipPath="inset(0 round 8px)" style={{ pointerEvents: 'none' }} />
                       )}
-                      <text x={node.x + (refCard.image ? 62 : 12)} y={node.y + 30} fontSize={12} fill="#f0f0f0"
+                      <text x={node.x + (refCard.image ? 62 : 12)} y={node.y + 30} fontSize={12} fill="var(--text-primary,#f0f0f0)"
                         fontFamily="'DM Sans', sans-serif" style={{ pointerEvents: 'none' }}>
                         {refCard.name.length > 10 ? refCard.name.slice(0, 9) + '…' : refCard.name}
                       </text>
@@ -324,7 +324,7 @@ export default function FamilyTreeView({ card, cards, customTypes, allTypes, onU
                       )}
                     </>
                   ) : (
-                    <text x={node.x + NODE_W / 2} y={node.y + NODE_H / 2 + 4} textAnchor="middle" fontSize={11} fill="#444444"
+                    <text x={node.x + NODE_W / 2} y={node.y + NODE_H / 2 + 4} textAnchor="middle" fontSize={11} fill="var(--text-dark,#444444)"
                       fontFamily="'DM Sans', sans-serif" style={{ pointerEvents: 'none' }}>
                       Cliquer pour lier
                     </text>
@@ -355,23 +355,23 @@ export default function FamilyTreeView({ card, cards, customTypes, allTypes, onU
           return (
             <div ref={pickerRef} style={{
               position: 'absolute', left: sx + 8, top: Math.min(sy, size.h - 280), zIndex: 600,
-              background: 'rgba(10,6,1,0.92)', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
-              border: '1px solid rgba(255,200,120,0.14)', borderRadius: 14,
+              background: 'var(--bg-panel-92,rgba(10,6,1,0.92))', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
+              border: '1px solid var(--border-14,rgba(255,200,120,0.14))', borderRadius: 14,
               width: 220, boxShadow: '0 8px 32px rgba(0,0,0,0.8)', overflow: 'hidden',
             }}>
               <div style={{ padding: '7px 9px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 <input autoFocus value={pickerSearch} onChange={e => setPickerSearch(e.target.value)}
                   placeholder="Rechercher un personnage…"
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 9px', color: '#f0f0f0', fontSize: 12, outline: 'none' }}
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 9px', color: 'var(--text-primary,#f0f0f0)', fontSize: 12, outline: 'none' }}
                 />
               </div>
               <div style={{ maxHeight: 200, overflowY: 'auto' }}>
-                {filtered.length === 0 && <div style={{ padding: '10px 14px', color: '#2e2e2e', fontSize: 12 }}>Aucun résultat</div>}
+                {filtered.length === 0 && <div style={{ padding: '10px 14px', color: 'var(--text-darker,#2e2e2e)', fontSize: 12 }}>Aucun résultat</div>}
                 {filtered.map(c => {
                   const t = allTypes.find(x => x.id === c.typeId)
                   return (
                     <div key={c.id} onClick={() => linkNode(showPicker, c.id)}
-                      style={{ padding: '7px 13px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: '#c0c0c0' }}
+                      style={{ padding: '7px 13px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'var(--text-secondary,#c0c0c0)' }}
                       onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                       {c.image ? <img src={c.image} alt="" style={{ width: 16, height: 16, borderRadius: 3, objectFit: 'cover' }} /> : <span style={{ fontSize: 12 }}>{t?.icon || '📄'}</span>}
@@ -385,13 +385,13 @@ export default function FamilyTreeView({ card, cards, customTypes, allTypes, onU
         })()}
 
         {/* Zoom */}
-        <div style={{ position: 'absolute', top: 12, right: 12, fontSize: 11, color: '#2e2e2e', zIndex: 10 }}>
+        <div style={{ position: 'absolute', top: 12, right: 12, fontSize: 11, color: 'var(--text-darker,#2e2e2e)', zIndex: 10 }}>
           {Math.round(zoom * 100)}%
         </div>
 
         {/* Hint */}
         {connectFrom && (
-          <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', fontSize: 12, color: '#c8a064', background: 'rgba(10,6,1,0.85)', padding: '5px 14px', borderRadius: 8, border: '1px solid rgba(200,160,100,0.2)', zIndex: 20 }}>
+          <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', fontSize: 12, color: 'var(--accent,#c8a064)', background: 'var(--bg-panel-85,rgba(10,6,1,0.85))', padding: '5px 14px', borderRadius: 8, border: '1px solid var(--border-14)', zIndex: 20 }}>
             Cliquez sur un second nœud pour créer la relation
           </div>
         )}
@@ -410,13 +410,13 @@ export default function FamilyTreeView({ card, cards, customTypes, allTypes, onU
             {showEdgeMenu && (
               <div style={{
                 position: 'absolute', bottom: '100%', left: 0, marginBottom: 6, zIndex: 600,
-                background: 'rgba(10,6,1,0.92)', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
-                border: '1px solid rgba(255,200,120,0.14)', borderRadius: 12, overflow: 'hidden',
+                background: 'var(--bg-panel-92,rgba(10,6,1,0.92))', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
+                border: '1px solid var(--border-14,rgba(255,200,120,0.14))', borderRadius: 12, overflow: 'hidden',
                 boxShadow: '0 8px 32px rgba(0,0,0,0.7)', minWidth: 160,
               }}>
                 {EDGE_TYPES.map(et => (
                   <div key={et.id} onClick={() => { setEdgeType(et.id); setShowEdgeMenu(false) }}
-                    style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: edgeType === et.id ? '#c8a064' : '#c0c0c0' }}
+                    style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: edgeType === et.id ? 'var(--accent,#c8a064)' : 'var(--text-secondary,#c0c0c0)' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                     <span style={{ width: 16, height: 3, background: et.color, borderRadius: 2, display: 'inline-block', borderTop: et.dash ? '1px dashed ' + et.color : 'none' }} />
@@ -442,9 +442,9 @@ export default function FamilyTreeView({ card, cards, customTypes, allTypes, onU
 function PlusBtn({ x, y, onClick }) {
   return (
     <g onClick={e => { e.stopPropagation(); onClick() }} style={{ cursor: 'pointer' }}>
-      <rect x={x} y={y} width={20} height={20} rx={6} fill="rgba(200,160,100,0.15)" stroke="rgba(200,160,100,0.3)" strokeWidth={1} />
-      <line x1={x + 6} y1={y + 10} x2={x + 14} y2={y + 10} stroke="#c8a064" strokeWidth={1.5} />
-      <line x1={x + 10} y1={y + 6} x2={x + 10} y2={y + 14} stroke="#c8a064" strokeWidth={1.5} />
+      <rect x={x} y={y} width={20} height={20} rx={6} fill="var(--accent-15)" stroke="var(--accent-30)" strokeWidth={1} />
+      <line x1={x + 6} y1={y + 10} x2={x + 14} y2={y + 10} stroke="var(--accent,#c8a064)" strokeWidth={1.5} />
+      <line x1={x + 10} y1={y + 6} x2={x + 10} y2={y + 14} stroke="var(--accent,#c8a064)" strokeWidth={1.5} />
     </g>
   )
 }

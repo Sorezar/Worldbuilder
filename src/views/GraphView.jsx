@@ -123,7 +123,7 @@ export default function GraphView({ cards, customTypes, onOpenCard }) {
         <div style={{ position: 'relative' }}>
           <Icon name="search" size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark,#444444)' }} />
           <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Filtrer…"
-            style={{ background: 'rgba(10,6,1,0.8)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '7px 10px 7px 26px', color: 'var(--text-secondary,#c0c0c0)', fontSize: 12, outline: 'none', width: 150 }}
+            style={{ background: 'var(--bg-panel-85,rgba(10,6,1,0.8))', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '7px 10px 7px 26px', color: 'var(--text-secondary,#c0c0c0)', fontSize: 12, outline: 'none', width: 150 }}
           />
         </div>
         <Btn variant="dark" size="sm" onClick={() => { setPan({ x: 0, y: 0 }); setZoom(1) }}>
@@ -139,7 +139,7 @@ export default function GraphView({ cards, customTypes, onOpenCard }) {
       <div style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
         <Btn variant="dark" size="icon" onClick={() => setZoom(z => Math.min(3, z * 1.2))}>+</Btn>
         <Btn variant="dark" size="icon" onClick={() => setZoom(z => Math.max(0.15, z * 0.8))}>−</Btn>
-        <div style={{ background: 'rgba(10,6,1,0.7)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 5, padding: '3px 5px', fontSize: 10, color: 'var(--text-dim,#5a5a5a)', textAlign: 'center' }}>{Math.round(zoom*100)}%</div>
+        <div style={{ background: 'var(--bg-panel-85,rgba(10,6,1,0.7))', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 5, padding: '3px 5px', fontSize: 10, color: 'var(--text-dim,#5a5a5a)', textAlign: 'center' }}>{Math.round(zoom*100)}%</div>
       </div>
 
       {/* Legend */}
@@ -170,7 +170,7 @@ export default function GraphView({ cards, customTypes, onOpenCard }) {
             return (
               <line key={`${e.from}-${e.to}`}
                 x1={fp.x} y1={fp.y} x2={tp.x} y2={tp.y}
-                stroke={isHigh ? 'rgba(200,160,100,0.5)' : 'rgba(255,255,255,0.1)'}
+                stroke={isHigh ? 'var(--accent-50)' : 'rgba(255,255,255,0.1)'}
                 strokeWidth={isHigh ? 1.5 : 1} strokeDasharray="5,4"
               />
             )
@@ -229,10 +229,10 @@ function TypeLegend({ customTypes }) {
   const ct = customTypes || []
   const all = [...BUILTIN_TYPES.filter(t => !t.virtual && !t.parentId && !ct.some(c => c.id === t.id)), ...ct.filter(t => !t.parentId)]
   return (
-    <div style={{ position: 'absolute', bottom: 16, left: 14, zIndex: 10, background: 'rgba(10,6,1,0.7)', backdropFilter: 'blur(30px) saturate(1.4)', WebkitBackdropFilter: 'blur(30px) saturate(1.4)', border: '1px solid rgba(255,200,120,0.1)', borderRadius: 14, padding: '11px 15px' }}>
+    <div style={{ position: 'absolute', bottom: 16, left: 14, zIndex: 10, background: 'var(--bg-panel-85,rgba(10,6,1,0.7))', backdropFilter: 'blur(30px) saturate(1.4)', WebkitBackdropFilter: 'blur(30px) saturate(1.4)', border: '1px solid var(--border-14,rgba(255,200,120,0.1))', borderRadius: 14, padding: '11px 15px' }}>
       <div style={{ fontSize: 10, color: 'var(--text-dark,#444444)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7 }}>Types</div>
       {all.map(t => (
-        <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, color: '#8a8a8a', marginBottom: 3 }}>
+        <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, color: 'var(--text-muted,#8a8a8a)', marginBottom: 3 }}>
           <div style={{ width: 9, height: 9, borderRadius: '50%', background: t.color || BUILTIN_COLORS[t.id] || '#8a8a8a', flexShrink: 0 }} />
           {t.icon} {t.name}
         </div>

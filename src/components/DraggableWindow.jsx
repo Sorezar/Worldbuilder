@@ -69,14 +69,14 @@ export default function DraggableWindow({
         style={{
           height: 44, display: 'flex', alignItems: 'center', gap: 9,
           padding: '0 14px 0 16px', flexShrink: 0,
-          background: 'rgba(255,200,100,0.03)',
-          borderBottom: '1px solid rgba(255,200,120,0.1)',
+          background: 'var(--accent-03,rgba(255,200,100,0.03))',
+          borderBottom: '1px solid var(--border-14,rgba(255,200,120,0.1))',
           cursor: maximized ? 'default' : 'move',
           userSelect: 'none',
         }}
       >
         {icon && <span style={{ fontSize: 14 }}>{icon}</span>}
-        <span style={{ fontFamily: "'Lora', serif", fontSize: 14, color: '#f0f0f0', fontWeight: 500, flex: 1 }}>
+        <span style={{ fontFamily: "var(--font)", fontSize: 14, color: 'var(--text-primary,#f0f0f0)', fontWeight: 500, flex: 1 }}>
           {title}
         </span>
         {/* Window controls */}
@@ -105,7 +105,7 @@ export default function DraggableWindow({
           }}
         >
           <svg width={10} height={10} viewBox="0 0 10 10" fill="none">
-            <path d="M9 1L1 9M9 5L5 9M9 9H9" stroke="rgba(255,200,120,0.25)" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M9 1L1 9M9 5L5 9M9 9H9" stroke="var(--accent-25,rgba(255,200,120,0.25))" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </div>
       )}

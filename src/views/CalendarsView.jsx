@@ -59,7 +59,7 @@ export default function CalendarsView({ calendars, onCreate, onUpdate, onDelete,
   return (
     <div style={{ position:'fixed', inset:0, zIndex:500, display:'flex', alignItems:'center', justifyContent:'center' }}>
       <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.6)' }} onClick={onClose} />
-      <div style={{ position:'relative', background:'rgba(12,8,2,0.85)', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid rgba(255,200,120,0.12)', borderRadius:18, width:680, maxHeight:'80vh', display:'flex', flexDirection:'column', boxShadow:'0 24px 80px rgba(0,0,0,0.8)' }}>
+      <div style={{ position:'relative', background:'var(--bg-panel-85,rgba(12,8,2,0.85))', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid var(--border-14,rgba(255,200,120,0.12))', borderRadius:18, width:680, maxHeight:'80vh', display:'flex', flexDirection:'column', boxShadow:'0 24px 80px rgba(0,0,0,0.8)' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
           <h2 style={{ fontFamily:"var(--font)", fontSize:18, color:'var(--text-primary,#f0f0f0)', fontWeight:500, margin:0 }}>📅 Calendriers</h2>
           <button onClick={onClose} style={{ background:'none', border:'none', color:'var(--text-dim,#5a5a5a)', cursor:'pointer', fontSize:18, lineHeight:1 }}>✕</button>
@@ -103,8 +103,8 @@ function CalendarCard({ cal, onEdit, onDelete }) {
           <span style={{ marginLeft:10, fontSize:11, color:'var(--text-dim,#5a5a5a)' }}>Décalage : {cal.offsetDays||0} jours</span>
         </div>
         <div style={{ display:'flex', gap:8 }}>
-          <button onClick={onEdit} style={{ background:'none', border:'none', color:'var(--text-dim,#5a5a5a)', cursor:'pointer', fontSize:12 }} onMouseEnter={e=>e.currentTarget.style.color='#c8a064'} onMouseLeave={e=>e.currentTarget.style.color='#5a5a5a'}>Modifier</button>
-          <button onClick={onDelete} style={{ background:'none', border:'none', color:'#5a3030', cursor:'pointer', fontSize:12 }} onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} onMouseLeave={e=>e.currentTarget.style.color='#5a3030'}>Supprimer</button>
+          <button onClick={onEdit} style={{ background:'none', border:'none', color:'var(--text-dim,#5a5a5a)', cursor:'pointer', fontSize:12 }} onMouseEnter={e=>e.currentTarget.style.color='var(--accent,#c8a064)'} onMouseLeave={e=>e.currentTarget.style.color='var(--text-dim,#5a5a5a)'}>Modifier</button>
+          <button onClick={onDelete} style={{ background:'none', border:'none', color:'var(--danger-muted,#5a3030)', cursor:'pointer', fontSize:12 }} onMouseEnter={e=>e.currentTarget.style.color='var(--danger,#ef4444)'} onMouseLeave={e=>e.currentTarget.style.color='var(--danger-muted,#5a3030)'}>Supprimer</button>
         </div>
       </div>
       {months.length > 0 && (

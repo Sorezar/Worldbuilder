@@ -22,7 +22,7 @@ export default function CardTypesView({ customTypes, onUpdateType, onCreateCusto
   return (
     <div style={{ display:'flex', height:'100%' }}>
       {/* Left tree */}
-      <div style={{ width:240, flexShrink:0, borderRight:'1px solid rgba(255,200,120,0.08)', display:'flex', flexDirection:'column' }}>
+      <div style={{ width:240, flexShrink:0, borderRight:'1px solid var(--border-14,rgba(255,200,120,0.08))', display:'flex', flexDirection:'column' }}>
         <div style={{ padding:'10px 10px 8px', borderBottom:'1px solid rgba(255,255,255,0.05)', display:'flex', gap:7, alignItems:'center' }}>
           <div style={{ position:'relative', flex:1 }}>
             <Icon name="search" size={11} style={{ position:'absolute', left:8, top:'50%', transform:'translateY(-50%)', color:'var(--text-darker,#2e2e2e)' }} />
@@ -30,7 +30,7 @@ export default function CardTypesView({ customTypes, onUpdateType, onCreateCusto
               style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'none', borderRadius:6, padding:'5px 8px 5px 22px', color:'var(--text-secondary,#c0c0c0)', fontSize:12, outline:'none' }} />
           </div>
           <button onClick={() => { setCreating(true); setSelected(null) }} style={{ background:'none', border:'1px solid rgba(255,255,255,0.09)', borderRadius:6, color:'var(--text-dim,#5a5a5a)', cursor:'pointer', padding:'4px 7px', fontSize:11 }}
-            onMouseEnter={e=>e.currentTarget.style.color='#c8a064'} onMouseLeave={e=>e.currentTarget.style.color='#5a5a5a'}>
+            onMouseEnter={e=>e.currentTarget.style.color='var(--accent,#c8a064)'} onMouseLeave={e=>e.currentTarget.style.color='var(--text-dim,#5a5a5a)'}>
             <Icon name="plus" size={12} />
           </button>
         </div>
@@ -81,11 +81,11 @@ function TypeTreeItem({ type, typeMap, selected, onSelect, depth=0, filtered, cu
 
   return (
     <div>
-      <div style={{ display:'flex', alignItems:'center', gap:6, padding:`5px 8px 5px ${8+depth*14}px`, borderRadius:6, cursor:'pointer', marginBottom:1, background: isSelected?'rgba(200,160,100,0.1)':'transparent', transition:'background 0.1s' }}
+      <div style={{ display:'flex', alignItems:'center', gap:6, padding:`5px 8px 5px ${8+depth*14}px`, borderRadius:6, cursor:'pointer', marginBottom:1, background: isSelected?'var(--accent-10)':'transparent', transition:'background 0.1s' }}
         onMouseEnter={e => { if(!isSelected) e.currentTarget.style.background='rgba(255,255,255,0.04)' }}
         onMouseLeave={e => { if(!isSelected) e.currentTarget.style.background='transparent' }}>
         <span style={{ fontSize:14, width:18, textAlign:'center', flexShrink:0 }}>{type.icon}</span>
-        <span onClick={() => onSelect(type.id)} style={{ flex:1, fontSize:12, color: isSelected?'#f0f0f0':'#8a8a8a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{type.name}</span>
+        <span onClick={() => onSelect(type.id)} style={{ flex:1, fontSize:12, color: isSelected?'var(--text-primary,#f0f0f0)':'var(--text-muted,#8a8a8a)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{type.name}</span>
         {isOverridden && BUILTIN_TYPES.some(t=>t.id===type.id) && <span style={{ fontSize:9, color:'var(--accent,#c8a064)', opacity:0.6, flexShrink:0 }}>✦</span>}
         {/* Expand arrow — RIGHT */}
         {!filtered && children.length > 0
@@ -130,8 +130,8 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
           {isBuiltin && <span style={{ fontSize:10, color:'var(--text-dim,#5a5a5a)', background:'rgba(255,255,255,0.04)', padding:'2px 6px', borderRadius:4 }}>Intégré</span>}
         </div>
         {!BUILTIN_TYPES.some(t=>t.id===type.id) && (
-          <button onClick={onDelete} style={{ background:'none', border:'none', color:'#5a3030', cursor:'pointer', fontSize:12 }}
-            onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} onMouseLeave={e=>e.currentTarget.style.color='#5a3030'}>
+          <button onClick={onDelete} style={{ background:'none', border:'none', color:'var(--text-darker,#2e2e2e)', cursor:'pointer', fontSize:12 }}
+            onMouseEnter={e=>e.currentTarget.style.color='var(--danger,#e05040)'} onMouseLeave={e=>e.currentTarget.style.color='var(--text-darker,#2e2e2e)'}>
             <Icon name="trash" size={14} />
           </button>
         )}
@@ -148,8 +148,8 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
         {addingProp
           ? <DropdownPropPicker allTypes={allTypes} onAdd={addProp} onCancel={() => setAddingProp(false)} />
           : <button onClick={() => setAddingProp(true)} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 11px', width:'100%', background:'rgba(255,255,255,0.02)', border:'1px dashed rgba(255,255,255,0.07)', borderRadius:7, color:'var(--text-dark,#444444)', fontSize:12, cursor:'pointer', transition:'all 0.1s' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor='rgba(200,160,100,0.3)'; e.currentTarget.style.color='#c8a064' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(255,255,255,0.07)'; e.currentTarget.style.color='#444444' }}>
+              onMouseEnter={e => { e.currentTarget.style.borderColor='var(--accent-22)'; e.currentTarget.style.color='var(--accent,#c8a064)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(255,255,255,0.07)'; e.currentTarget.style.color='var(--text-dark,#444444)' }}>
               <Icon name="plus" size={12} /> Ajouter une propriété
             </button>
         }
@@ -169,10 +169,24 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
 }
 
 // ─── PropRow — inline rename on click + type/emoji editing ────
+const EMOJI_GRID = [
+  '😀','😂','😍','🥳','😎','🤔','😢','😡','🥺','🤩',
+  '👤','👥','👑','🧙','🧝','🧛','🧟','🦸','👻','💀',
+  '⚔️','🛡','🗡','🏹','🔮','✨','💎','🔥','❄️','⚡',
+  '🌍','🗺','🏰','🏛','🏙','🏡','⛪','🗿','🌋','🏔',
+  '📍','🌊','🌲','🌸','🍃','🌿','🦎','🐉','🦅','🐺',
+  '📜','📖','📚','📝','📅','📌','🔖','🏷','📊','📈',
+  '⚜️','🪶','🎭','🎪','🎉','🎵','🔔','💡','🕯','🧪',
+  '⚗️','🌀','⛩','🔭','⚖️','🧭','🗝','💰','🎲','🃏',
+  '❤️','💔','💜','💙','💚','💛','🧡','🤎','🖤','🤍',
+  '⭐','✦','◆','●','■','▲','☰','#','☀️','🌙',
+]
+
 function PropRow({ prop, allTypes, onRename, onRemove, onEditProp }) {
   const [editing, setEditing] = useState(false)
   const [draft,   setDraft]   = useState(prop.name)
   const [showTypePicker, setShowTypePicker] = useState(false)
+  const [emojiSearch, setEmojiSearch] = useState('')
   const pickerRef = useRef()
   const isRef    = prop.fieldType === FIELD_TYPES.CARD_REF
   const emoji    = prop.emoji
@@ -200,9 +214,9 @@ function PropRow({ prop, allTypes, onRename, onRemove, onEditProp }) {
   return (
     <div style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 11px', background:'rgba(255,255,255,0.03)', borderRadius:7, border:'1px solid rgba(255,255,255,0.05)', position:'relative' }}>
       <span onClick={() => setShowTypePicker(v => !v)} title="Changer le type"
-        style={{ fontSize:10, color:'var(--text-dark,#444444)', background: showTypePicker ? 'rgba(200,160,100,0.15)' : 'rgba(255,255,255,0.04)', padding:'1px 6px', borderRadius:3, flexShrink:0, cursor:'pointer', transition:'background 0.1s' }}>{badge}</span>
+        style={{ fontSize:10, color:'var(--text-dark,#444444)', background: showTypePicker ? 'var(--accent-15)' : 'rgba(255,255,255,0.04)', padding:'1px 6px', borderRadius:3, flexShrink:0, cursor:'pointer', transition:'background 0.1s' }}>{badge}</span>
       {showTypePicker && (
-        <div ref={pickerRef} style={{ position:'absolute', top:'100%', left:0, zIndex:600, marginTop:4, background:'rgba(10,6,1,0.92)', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid rgba(255,200,120,0.14)', borderRadius:12, overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.7)', width:220 }}>
+        <div ref={pickerRef} style={{ position:'absolute', top:'100%', left:0, zIndex:600, marginTop:4, background:'var(--bg-panel-92,rgba(10,6,1,0.92))', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid var(--border-14,rgba(255,200,120,0.14))', borderRadius:12, overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.7)', width:220 }}>
           <div style={{ padding:'6px 10px 4px', fontSize:10, color:'var(--text-darker,#2e2e2e)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Type</div>
           {SCALARS.map(s => {
             const active = !isRef && prop.fieldType === s.id
@@ -228,11 +242,17 @@ function PropRow({ prop, allTypes, onRename, onRemove, onEditProp }) {
           </div>
           <div style={{ height:1, background:'rgba(255,255,255,0.05)', margin:'4px 8px' }} />
           <div style={{ padding:'4px 10px 2px', fontSize:10, color:'var(--text-darker,#2e2e2e)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Emoji</div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(8,1fr)', gap:1, padding:'4px 8px 8px', maxHeight:100, overflowY:'auto' }}>
-            {['T','#','📅','🔗','👤','📍','⚔️','💎','📅','📖','🌿','📜','🛡','🔮','✨','🌸'].map((em,i) => (
-              <button key={i} onClick={() => { onEditProp({ emoji: em }); setShowTypePicker(false) }}
-                style={{ background: prop.emoji===em ? 'rgba(200,160,100,0.2)' : 'transparent', border:'none', borderRadius:4, cursor:'pointer', fontSize:12, padding:'4px 0', color:'#c0c0c0', transition:'background 0.08s' }}
-                onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.08)'}
+          <div style={{ padding:'4px 8px 4px' }}>
+            <input value={emojiSearch} onChange={e => setEmojiSearch(e.target.value)}
+              placeholder="Rechercher…"
+              style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:6, padding:'4px 8px', color:'var(--text-secondary,#c0c0c0)', fontSize:11, outline:'none', marginBottom:4, boxSizing:'border-box' }}
+            />
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(10,1fr)', gap:2, padding:'0 8px 8px', maxHeight:140, overflowY:'auto' }}>
+            {(emojiSearch ? EMOJI_GRID.filter(e => e.includes(emojiSearch)) : EMOJI_GRID).map((em,i) => (
+              <button key={i} onClick={() => { onEditProp({ emoji: em }); setShowTypePicker(false); setEmojiSearch('') }}
+                style={{ width:'100%', aspectRatio:'1', display:'flex', alignItems:'center', justifyContent:'center', background: prop.emoji===em ? 'var(--accent-18)' : 'transparent', border:'none', borderRadius:4, cursor:'pointer', fontSize:13, padding:0, transition:'background 0.08s' }}
+                onMouseEnter={e => { if(prop.emoji!==em) e.currentTarget.style.background='rgba(255,255,255,0.08)' }}
                 onMouseLeave={e => { if(prop.emoji!==em) e.currentTarget.style.background='transparent' }}>
                 {em}
               </button>
@@ -243,14 +263,14 @@ function PropRow({ prop, allTypes, onRename, onRemove, onEditProp }) {
       {editing
         ? <input autoFocus value={draft} onChange={e=>setDraft(e.target.value)} onBlur={commit}
             onKeyDown={e => { if(e.key==='Enter') commit(); if(e.key==='Escape') { setDraft(prop.name); setEditing(false) } }}
-            style={{ flex:1, background:'transparent', border:'none', borderBottom:'1px solid rgba(200,160,100,0.4)', color:'var(--text-primary,#f0f0f0)', fontSize:12, outline:'none' }} />
+            style={{ flex:1, background:'transparent', border:'none', borderBottom:'1px solid var(--accent-40)', color:'var(--text-primary,#f0f0f0)', fontSize:12, outline:'none' }} />
         : <span onClick={() => setEditing(true)} title="Cliquer pour renommer"
             style={{ fontSize:12, flex:1, color:'var(--text-secondary,#c0c0c0)', cursor:'text' }}>{prop.name}</span>
       }
       {targets && <span style={{ fontSize:10, color:'var(--text-dim,#5a5a5a)', flexShrink:0 }}>→ {targets}</span>}
       {prop.multiple && <span style={{ fontSize:9, color:'var(--text-dark,#444444)', flexShrink:0 }}>×n</span>}
       <button onClick={onRemove} style={{ background:'none', border:'none', color:'var(--text-darker,#2e2e2e)', cursor:'pointer', padding:'0 2px', fontSize:10, lineHeight:1, flexShrink:0 }}
-        onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} onMouseLeave={e=>e.currentTarget.style.color='#2e2e2e'}>✕</button>
+        onMouseEnter={e=>e.currentTarget.style.color='var(--danger,#e05040)'} onMouseLeave={e=>e.currentTarget.style.color='var(--text-darker,#2e2e2e)'}>✕</button>
     </div>
   )
 }
@@ -305,7 +325,7 @@ export function DropdownPropPicker({ allTypes, onAdd, onCancel }) {
   }
 
   return (
-    <div ref={ref} className="anim-slidedown" style={{ background:'rgba(8,4,0,0.85)', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid rgba(200,160,100,0.14)', borderRadius:14, overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.7)', marginBottom:6 }}>
+    <div ref={ref} className="anim-slidedown" style={{ background:'var(--bg-panel-85,rgba(8,4,0,0.85))', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid var(--border-14)', borderRadius:14, overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.7)', marginBottom:6 }}>
       <div style={{ padding:'8px 10px', borderBottom:'1px solid rgba(255,255,255,0.05)', display:'flex', alignItems:'center', gap:6 }}>
         <input autoFocus value={name} onChange={e=>setName(e.target.value)}
           onKeyDown={e => { if(e.key==='Escape') onCancel() }}
@@ -351,7 +371,7 @@ function InlineNewType({ allTypes, onCancel, onCreate }) {
         <EmojiPicker value={icon} onChange={setIcon} />
         <input autoFocus value={name} onChange={e=>setName(e.target.value)} placeholder="Nom du nouveau type…"
           onKeyDown={e => { if(e.key==='Enter'&&name.trim()) onCreate({name:name.trim(),icon,color,parentId:parentId||null,defaultProps:[]}); if(e.key==='Escape') onCancel() }}
-          style={{ flex:1, background:'transparent', border:'none', borderBottom:'1px solid rgba(200,160,100,0.3)', color:'var(--text-primary,#f0f0f0)', fontSize:22, fontFamily:"var(--font)", fontWeight:600, outline:'none', paddingBottom:4 }} />
+          style={{ flex:1, background:'transparent', border:'none', borderBottom:'1px solid var(--accent-30)', color:'var(--text-primary,#f0f0f0)', fontSize:22, fontFamily:"var(--font)", fontWeight:600, outline:'none', paddingBottom:4 }} />
       </div>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:18, marginBottom:22 }}>
         <div>

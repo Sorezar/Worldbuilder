@@ -175,7 +175,7 @@ export default function TimelineView({ cards, customTypes, calendars, onOpenCard
                 {char.image
                   ? <img src={char.image} alt="" style={{ width:20,height:20,borderRadius:'50%',objectFit:'cover',flexShrink:0 }} />
                   : <div style={{ width:20,height:20,borderRadius:'50%',background:'rgba(192,132,252,0.2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,flexShrink:0 }}>👤</div>}
-                <span style={{ fontSize:12, color:sel?'#f0f0f0':'#8a8a8a', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{char.name}</span>
+                <span style={{ fontSize:12, color:sel?'var(--text-primary,#f0f0f0)':'var(--text-muted,#8a8a8a)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{char.name}</span>
               </div>
             )
           })}
@@ -187,12 +187,12 @@ export default function TimelineView({ cards, customTypes, calendars, onOpenCard
           <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', padding:'10px 12px' }}>
             <div style={{ fontSize:10, color:'var(--text-darker,#2e2e2e)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:7 }}>Référentiel</div>
             <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
-              <label style={{ display:'flex', alignItems:'center', gap:7, fontSize:12, color:viewCal==='real'?'#c0c0c0':'#5a5a5a', cursor:'pointer' }}>
+              <label style={{ display:'flex', alignItems:'center', gap:7, fontSize:12, color:viewCal==='real'?'var(--text-secondary,#c0c0c0)':'var(--text-dim,#5a5a5a)', cursor:'pointer' }}>
                 <input type="radio" checked={viewCal==='real'} onChange={() => setViewCal('real')} style={{ accentColor:'var(--accent,#c8a064)' }} />
                 Grégorien
               </label>
               {(calendars||[]).map(cal => (
-                <label key={cal.id} style={{ display:'flex', alignItems:'center', gap:7, fontSize:12, color:viewCal===cal.id?'#c0c0c0':'#5a5a5a', cursor:'pointer' }}>
+                <label key={cal.id} style={{ display:'flex', alignItems:'center', gap:7, fontSize:12, color:viewCal===cal.id?'var(--text-secondary,#c0c0c0)':'var(--text-dim,#5a5a5a)', cursor:'pointer' }}>
                   <input type="radio" checked={viewCal===cal.id} onChange={() => setViewCal(cal.id)} style={{ accentColor:'var(--accent,#c8a064)' }} />
                   {cal.name}
                 </label>
@@ -271,7 +271,7 @@ export default function TimelineView({ cards, customTypes, calendars, onOpenCard
                           <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center', marginTop:4 }}>
                             {location && <span style={{ fontSize:11, color:'var(--text-dim,#5a5a5a)' }}>📍 {location.name}</span>}
                             {participants.slice(0,4).map(p => (
-                              <span key={p.id} style={{ display:'inline-flex', alignItems:'center', gap:3, fontSize:11, padding:'1px 6px', background:selectedChars.includes(p.id)?'rgba(192,132,252,0.2)':'rgba(255,255,255,0.05)', border:`1px solid ${selectedChars.includes(p.id)?'rgba(192,132,252,0.35)':'rgba(255,255,255,0.08)'}`, borderRadius:4, color:selectedChars.includes(p.id)?'#c084fc':'#8a8a8a' }}>
+                              <span key={p.id} style={{ display:'inline-flex', alignItems:'center', gap:3, fontSize:11, padding:'1px 6px', background:selectedChars.includes(p.id)?'rgba(192,132,252,0.2)':'rgba(255,255,255,0.05)', border:`1px solid ${selectedChars.includes(p.id)?'rgba(192,132,252,0.35)':'rgba(255,255,255,0.08)'}`, borderRadius:4, color:selectedChars.includes(p.id)?'#c084fc':'var(--text-muted,#8a8a8a)' }}>
                                 {p.image?<img src={p.image} alt="" style={{ width:11,height:11,borderRadius:'50%',objectFit:'cover' }} />:'👤'}
                                 {p.name}
                               </span>

@@ -78,11 +78,11 @@ export function Btn({ children, onClick, variant = 'ghost', size = 'md', style, 
   const variants = {
     ghost:   { background: 'transparent',                         color: 'var(--text-dim,#8a8a8a)' },
     subtle:  { background: 'rgba(255,255,255,0.06)',              color: 'var(--text-secondary,#c0c0c0)', border: '1px solid rgba(255,255,255,0.08)' },
-    primary: { background: 'var(--accent-15,rgba(200,160,100,0.15))', color: 'var(--accent,#c8a064)', border: '1px solid var(--accent-22,rgba(200,160,100,0.22))' },
-    danger:  { background: 'rgba(220,60,60,0.1)',                 color: '#e05040', border: '1px solid rgba(220,60,60,0.18)' },
-    solid:   { background: 'var(--accent,#c8a064)',               color: '#1a1208', border: 'none' },
+    primary: { background: 'var(--accent-15)', color: 'var(--accent,#c8a064)', border: '1px solid var(--accent-22)' },
+    danger:  { background: 'var(--danger-10)',                     color: 'var(--danger,#e05040)', border: '1px solid var(--danger-18)' },
+    solid:   { background: 'var(--accent,#c8a064)',               color: 'var(--bg-deep,#1a1208)', border: 'none' },
     dark:    { background: 'rgba(0,0,0,0.4)',                     color: 'var(--text-secondary,#c0c0c0)', border: '1px solid rgba(255,255,255,0.09)' },
-    active:  { background: 'var(--accent-18,rgba(200,160,100,0.18))', color: 'var(--text-primary,#f0f0f0)', border: '1px solid var(--accent-22,rgba(200,160,100,0.22))' },
+    active:  { background: 'var(--accent-18)', color: 'var(--text-primary,#f0f0f0)', border: '1px solid var(--accent-22)' },
   }
   return (
     <button type={type} onClick={disabled ? undefined : onClick} title={title}
@@ -121,10 +121,10 @@ export function Input({ value, onChange, placeholder, style, autoFocus, onKeyDow
       placeholder={placeholder} autoFocus={autoFocus} onKeyDown={onKeyDown}
       style={{
         background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
-        borderRadius: 10, padding: '8px 12px', color: '#f0f0f0', fontSize: 13,
+        borderRadius: 10, padding: '8px 12px', color: 'var(--text-primary,#f0f0f0)', fontSize: 13,
         outline: 'none', width: '100%', transition: 'border-color 0.12s', ...style,
       }}
-      onFocus={e => e.target.style.borderColor = 'var(--accent,rgba(200,160,100,0.6))'}
+      onFocus={e => e.target.style.borderColor = 'var(--accent-60)'}
       onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; if (onBlur) onBlur() }}
     />
   )
@@ -137,11 +137,11 @@ export function Textarea({ value, onChange, placeholder, rows = 4, style }) {
       placeholder={placeholder} rows={rows}
       style={{
         background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
-        borderRadius: 10, padding: '9px 12px', color: '#f0f0f0', fontSize: 13,
+        borderRadius: 10, padding: '9px 12px', color: 'var(--text-primary,#f0f0f0)', fontSize: 13,
         lineHeight: 1.75, outline: 'none', width: '100%', resize: 'vertical',
         transition: 'border-color 0.12s', fontFamily: "var(--font-body)", ...style,
       }}
-      onFocus={e => e.target.style.borderColor = 'var(--accent,rgba(200,160,100,0.6))'}
+      onFocus={e => e.target.style.borderColor = 'var(--accent-60)'}
       onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.09)'}
     />
   )
@@ -165,8 +165,8 @@ export function Dropdown({ value, options, onChange, placeholder = 'Sélectionne
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
         padding: '7px 12px', borderRadius: 10, cursor: 'pointer',
         background: 'rgba(255,255,255,0.05)',
-        border: open ? '1px solid var(--accent,rgba(200,160,100,0.4))' : '1px solid rgba(255,255,255,0.09)',
-        fontSize: 13, color: selected ? 'var(--text-primary,#f0f0f0)' : '#4a4030',
+        border: open ? '1px solid var(--accent-40)' : '1px solid rgba(255,255,255,0.09)',
+        fontSize: 13, color: selected ? 'var(--text-primary,#f0f0f0)' : 'var(--text-dark,#444444)',
       }}>
         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
         <Icon name="chevron_down" size={12} style={{ opacity: 0.4, flexShrink: 0 }} />
@@ -174,7 +174,7 @@ export function Dropdown({ value, options, onChange, placeholder = 'Sélectionne
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 600,
-          background: 'rgba(14,10,4,0.9)', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)', border: '1px solid rgba(255,200,120,0.12)',
+          background: 'var(--bg-panel-92,rgba(14,10,4,0.9))', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)', border: '1px solid var(--border-14,rgba(255,200,120,0.12))',
           borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
           maxHeight: 220, overflowY: 'auto',
         }}>
@@ -187,7 +187,7 @@ export function Dropdown({ value, options, onChange, placeholder = 'Sélectionne
                 style={{
                   padding: '8px 13px', fontSize: 13, cursor: 'pointer',
                   color: isSelected ? 'var(--accent,#c8a064)' : 'var(--text-secondary,#c0c0c0)',
-                  background: isSelected ? 'var(--accent-10,rgba(200,160,100,0.1))' : 'transparent',
+                  background: isSelected ? 'var(--accent-10)' : 'transparent',
                   display: 'flex', alignItems: 'center', gap: 8,
                 }}
                 onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
@@ -221,7 +221,7 @@ export function Modal({ title, children, onClose, width = 520, noPad = false }) 
       }}>
       <div className="anim-scalein" style={{
         width: '90%', maxWidth: width, maxHeight: '90vh',
-        background: 'rgba(14,10,4,0.85)', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)', border: '1px solid rgba(255,200,120,0.12)',
+        background: 'var(--bg-panel-85,rgba(14,10,4,0.85))', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)', border: '1px solid var(--border-14,rgba(255,200,120,0.12))',
         borderRadius: 18, boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
       }}>
@@ -253,7 +253,7 @@ export function ConfirmModal({ title, message, confirmLabel = 'Supprimer', onCon
   return (
     <div className="anim-fadein" onClick={e => { if (e.target === e.currentTarget) onCancel() }}
       style={{ position: 'fixed', inset: 0, zIndex: 850, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="anim-scalein" style={{ width: '90%', maxWidth: 360, background: 'rgba(14,10,4,0.95)', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)', border: '1px solid rgba(255,200,120,0.14)', borderRadius: 16, padding: '24px 28px', boxShadow: '0 16px 48px rgba(0,0,0,0.7)' }}>
+      <div className="anim-scalein" style={{ width: '90%', maxWidth: 360, background: 'var(--bg-panel-95,rgba(14,10,4,0.95))', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)', border: '1px solid var(--border-14,rgba(255,200,120,0.14))', borderRadius: 16, padding: '24px 28px', boxShadow: '0 16px 48px rgba(0,0,0,0.7)' }}>
         <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary,#f0f0f0)', marginBottom: 10, fontFamily: 'var(--font)' }}>{title}</div>
         <p style={{ fontSize: 13, color: 'var(--text-dim,#5a5a5a)', lineHeight: 1.5, marginBottom: 20 }}>{message}</p>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -320,8 +320,8 @@ export function InlineEdit({ value, onChange, placeholder, style, multiline = fa
           onBlur={commit}
           onKeyDown={e => { if (e.key === 'Escape') { setDraft(value); setEditing(false) } }}
           style={{
-            background: 'transparent', border: 'none', borderBottom: '1px solid rgba(200,160,100,0.4)',
-            color: '#f0f0f0', fontSize, width: '100%', outline: 'none', resize: 'none',
+            background: 'transparent', border: 'none', borderBottom: '1px solid var(--accent-40)',
+            color: 'var(--text-primary,#f0f0f0)', fontSize, width: '100%', outline: 'none', resize: 'none',
             fontFamily: "var(--font-body)", lineHeight: 1.7, ...style,
           }}
           rows={3}
@@ -333,15 +333,15 @@ export function InlineEdit({ value, onChange, placeholder, style, multiline = fa
         onBlur={commit}
         onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setDraft(value); setEditing(false) } }}
         style={{
-          background: 'transparent', border: 'none', borderBottom: '1px solid rgba(200,160,100,0.4)',
-          color: '#f0f0f0', fontSize, width: '100%', outline: 'none', ...style,
+          background: 'transparent', border: 'none', borderBottom: '1px solid var(--accent-40)',
+          color: 'var(--text-primary,#f0f0f0)', fontSize, width: '100%', outline: 'none', ...style,
         }}
       />
     )
   }
   return (
     <span onClick={() => setEditing(true)}
-      style={{ cursor: 'text', color: value ? '#f0f0f0' : '#4a4030', fontSize, ...style }}>
+      style={{ cursor: 'text', color: value ? 'var(--text-primary,#f0f0f0)' : 'var(--text-dark,#4a4030)', fontSize, ...style }}>
       {value || placeholder || '—'}
     </span>
   )
@@ -380,8 +380,8 @@ export function EmojiPicker({ value, onChange, style }) {
       <button onClick={() => setOpen(v => !v)}
         style={{
           width:44, height:44, borderRadius:10,
-          border: open ? '1px solid rgba(200,160,100,0.4)' : '1px solid rgba(255,255,255,0.09)',
-          background: open ? 'rgba(200,160,100,0.1)' : 'rgba(255,255,255,0.05)',
+          border: open ? '1px solid var(--accent-40)' : '1px solid rgba(255,255,255,0.09)',
+          background: open ? 'var(--accent-10)' : 'rgba(255,255,255,0.05)',
           display:'flex', alignItems:'center', justifyContent:'center',
           cursor:'pointer', fontSize:22, transition:'all 0.12s',
         }}>
@@ -390,20 +390,20 @@ export function EmojiPicker({ value, onChange, style }) {
       {open && (
         <div style={{
           position:'absolute', top:'calc(100% + 6px)', left:0, zIndex:600,
-          background:'rgba(10,6,1,0.92)', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)',
-          border:'1px solid rgba(255,200,120,0.14)', borderRadius:12, overflow:'hidden',
+          background:'var(--bg-panel-92,rgba(10,6,1,0.92))', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)',
+          border:'1px solid var(--border-14,rgba(255,200,120,0.14))', borderRadius:12, overflow:'hidden',
           boxShadow:'0 8px 32px rgba(0,0,0,0.7)', width:260, padding:'8px',
         }}>
           <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Rechercher…"
-            style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:6, padding:'5px 8px', color:'#c0c0c0', fontSize:11, outline:'none', marginBottom:6, boxSizing:'border-box' }}
+            style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:6, padding:'5px 8px', color:'var(--text-secondary,#c0c0c0)', fontSize:11, outline:'none', marginBottom:6, boxSizing:'border-box' }}
           />
           <div style={{ display:'grid', gridTemplateColumns:'repeat(10, 1fr)', gap:2, maxHeight:160, overflowY:'auto' }}>
             {filtered.map((em, i) => (
               <button key={i} onClick={() => { onChange(em); setOpen(false); setSearch('') }}
                 style={{
                   width:'100%', aspectRatio:'1', display:'flex', alignItems:'center', justifyContent:'center',
-                  background: value===em ? 'rgba(200,160,100,0.2)' : 'transparent',
+                  background: value===em ? 'var(--accent-20)' : 'transparent',
                   border:'none', borderRadius:4, cursor:'pointer', fontSize:14, padding:0, transition:'background 0.08s',
                 }}
                 onMouseEnter={e => { if(value!==em) e.currentTarget.style.background='rgba(255,255,255,0.08)' }}

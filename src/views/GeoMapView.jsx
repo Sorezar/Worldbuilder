@@ -224,17 +224,17 @@ export default function GeoMapView({ card, cards, customTypes, allTypes, onUpdat
         <ViewHeader card={card} type={type} onClose={onClose} onUpdate={onUpdate} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, padding: 40 }}>
           <div style={{ fontSize: 48, opacity: 0.2 }}>🗺</div>
-          <p style={{ fontSize: 16, color: '#8a8a8a', textAlign: 'center' }}>Commencez par télécharger une image de carte</p>
-          <p style={{ fontSize: 12, color: '#444444', textAlign: 'center', maxWidth: 320 }}>
+          <p style={{ fontSize: 16, color: 'var(--text-muted,#8a8a8a)', textAlign: 'center' }}>Commencez par télécharger une image de carte</p>
+          <p style={{ fontSize: 12, color: 'var(--text-dark,#444444)', textAlign: 'center', maxWidth: 320 }}>
             Utilisez une image de carte de votre monde. Vous pourrez ensuite dessiner des zones et les lier à vos cartes.
           </p>
           <button onClick={handleUploadBg} style={{
             display: 'flex', alignItems: 'center', gap: 8, padding: '12px 24px', borderRadius: 12,
-            background: 'rgba(200,160,100,0.15)', border: '1px solid rgba(200,160,100,0.25)',
-            color: '#c8a064', fontSize: 14, cursor: 'pointer', transition: 'all 0.12s',
+            background: 'var(--accent-15)', border: '1px solid var(--accent-25)',
+            color: 'var(--accent,#c8a064)', fontSize: 14, cursor: 'pointer', transition: 'all 0.12s',
           }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(200,160,100,0.25)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(200,160,100,0.15)'}>
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-25)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--accent-15)'}>
             <Icon name="upload" size={16} /> Télécharger une image
           </button>
         </div>
@@ -250,23 +250,23 @@ export default function GeoMapView({ card, cards, customTypes, allTypes, onUpdat
         <div style={{ position: 'relative' }} ref={layersRef}>
           <button onClick={() => setShowLayers(v => !v)} style={{
             display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 7,
-            background: showLayers ? 'rgba(200,160,100,0.15)' : 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.08)', color: '#8a8a8a', fontSize: 11, cursor: 'pointer',
+            background: showLayers ? 'var(--accent-15)' : 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted,#8a8a8a)', fontSize: 11, cursor: 'pointer',
           }}>
             <Icon name="layers" size={12} /> Calques <Icon name="chevron_down" size={10} />
           </button>
           {showLayers && (
             <div style={{
               position: 'absolute', top: '100%', right: 0, marginTop: 4, zIndex: 600,
-              background: 'rgba(10,6,1,0.92)', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
-              border: '1px solid rgba(255,200,120,0.14)', borderRadius: 12, overflow: 'hidden',
+              background: 'var(--bg-panel-92,rgba(10,6,1,0.92))', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
+              border: '1px solid var(--border-14,rgba(255,200,120,0.14))', borderRadius: 12, overflow: 'hidden',
               boxShadow: '0 8px 32px rgba(0,0,0,0.7)', minWidth: 180, padding: '6px 0',
             }}>
               {layers.map(lyr => (
                 <div key={lyr.id} style={{
                   display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', fontSize: 12,
-                  color: activeLayer === lyr.id ? '#c8a064' : '#c0c0c0', cursor: 'pointer',
-                  background: activeLayer === lyr.id ? 'rgba(200,160,100,0.1)' : 'transparent',
+                  color: activeLayer === lyr.id ? 'var(--accent,#c8a064)' : 'var(--text-secondary,#c0c0c0)', cursor: 'pointer',
+                  background: activeLayer === lyr.id ? 'var(--accent-10)' : 'transparent',
                 }}
                   onClick={() => setActiveLayer(lyr.id)}
                 >
@@ -283,9 +283,9 @@ export default function GeoMapView({ card, cards, customTypes, allTypes, onUpdat
               ))}
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: 4, paddingTop: 4 }}>
                 <div onClick={addLayer}
-                  style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: '#8a8a8a' }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#c8a064'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#8a8a8a'}>
+                  style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: 'var(--text-muted,#8a8a8a)' }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--accent,#c8a064)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted,#8a8a8a)'}>
                   <Icon name="plus" size={11} /> Nouveau calque
                 </div>
               </div>
@@ -304,7 +304,7 @@ export default function GeoMapView({ card, cards, customTypes, allTypes, onUpdat
           onWheel={handleWheel}
           style={{ display: 'block', cursor: tool === 'polygon' ? 'crosshair' : tool === 'text' ? 'crosshair' : 'grab', userSelect: 'none' }}
         >
-          <rect width={size.w} height={size.h} fill="rgba(8,4,0,0.3)" />
+          <rect width={size.w} height={size.h} fill="var(--bg-deep-30,rgba(8,4,0,0.3))" />
 
           <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
             {/* Background image */}
@@ -341,7 +341,7 @@ export default function GeoMapView({ card, cards, customTypes, allTypes, onUpdat
                 <text key={lbl.id} x={lbl.x} y={lbl.y}
                   fontSize={lbl.fontSize || 14} fill={lbl.color || '#f0f0f0'}
                   fontFamily="'DM Sans', sans-serif" fontWeight={500}
-                  stroke={isSel ? 'rgba(200,160,100,0.4)' : 'none'} strokeWidth={isSel ? 3 : 0} paintOrder="stroke"
+                  stroke={isSel ? 'var(--accent-40)' : 'none'} strokeWidth={isSel ? 3 : 0} paintOrder="stroke"
                   style={{ cursor: 'pointer', textShadow: '0 1px 4px rgba(0,0,0,0.7)' }}
                   onClick={e => { e.stopPropagation(); setSelectedLabel(lbl.id); setSelectedZone(null) }}
                 >
@@ -354,9 +354,9 @@ export default function GeoMapView({ card, cards, customTypes, allTypes, onUpdat
             {drawingPoints.length > 0 && (
               <g>
                 <polyline points={drawingPoints.map(p => p.join(',')).join(' ')}
-                  fill="none" stroke="#c8a064" strokeWidth={2} strokeDasharray="6,4" />
+                  fill="none" stroke="var(--accent,#c8a064)" strokeWidth={2} strokeDasharray="6,4" />
                 {drawingPoints.map((p, i) => (
-                  <circle key={i} cx={p[0]} cy={p[1]} r={4 / zoom} fill="#c8a064" stroke="#fff" strokeWidth={1 / zoom} />
+                  <circle key={i} cx={p[0]} cy={p[1]} r={4 / zoom} fill="var(--accent,#c8a064)" stroke="#fff" strokeWidth={1 / zoom} />
                 ))}
               </g>
             )}
@@ -375,19 +375,19 @@ export default function GeoMapView({ card, cards, customTypes, allTypes, onUpdat
           return (
             <div ref={zoneEditorRef} style={{
               position: 'absolute', left: Math.min(sx, size.w - 260), top: Math.min(sy, size.h - 320), zIndex: 600,
-              background: 'rgba(10,6,1,0.92)', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
-              border: '1px solid rgba(255,200,120,0.14)', borderRadius: 14,
+              background: 'var(--bg-panel-92,rgba(10,6,1,0.92))', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
+              border: '1px solid var(--border-14,rgba(255,200,120,0.14))', borderRadius: 14,
               width: 240, boxShadow: '0 8px 32px rgba(0,0,0,0.8)', overflow: 'hidden',
             }}>
               <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ fontSize: 10, color: '#444444', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Label</div>
+                <div style={{ fontSize: 10, color: 'var(--text-dark,#444444)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Label</div>
                 <input value={zone.label || ''} onChange={e => updateZone(zone.id, { label: e.target.value })}
                   placeholder="Nom de la zone…"
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 9px', color: '#f0f0f0', fontSize: 12, outline: 'none' }}
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 9px', color: 'var(--text-primary,#f0f0f0)', fontSize: 12, outline: 'none' }}
                 />
               </div>
               <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ fontSize: 10, color: '#444444', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Couleur</div>
+                <div style={{ fontSize: 10, color: 'var(--text-dark,#444444)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Couleur</div>
                 <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                   {DEFAULT_COLORS.map(c => (
                     <div key={c} onClick={() => updateZone(zone.id, { color: c })} style={{
@@ -398,25 +398,25 @@ export default function GeoMapView({ card, cards, customTypes, allTypes, onUpdat
                 </div>
               </div>
               <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ fontSize: 10, color: '#444444', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Lier à une carte</div>
+                <div style={{ fontSize: 10, color: 'var(--text-dark,#444444)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Lier à une carte</div>
                 {linkedCard ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: 6 }}>
                     <span style={{ fontSize: 12 }}>{allTypes.find(t => t.id === linkedCard.typeId)?.icon || '📄'}</span>
-                    <span style={{ fontSize: 12, color: '#c0c0c0', flex: 1 }}>{linkedCard.name}</span>
-                    <span onClick={() => updateZone(zone.id, { cardId: null })} style={{ cursor: 'pointer', fontSize: 10, color: '#8a8a8a' }}>✕</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary,#c0c0c0)', flex: 1 }}>{linkedCard.name}</span>
+                    <span onClick={() => updateZone(zone.id, { cardId: null })} style={{ cursor: 'pointer', fontSize: 10, color: 'var(--text-muted,#8a8a8a)' }}>✕</span>
                   </div>
                 ) : (
                   <>
                     <input value={zoneEditorSearch} onChange={e => setZoneEditorSearch(e.target.value)}
                       placeholder="Rechercher…"
-                      style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 8px', color: '#f0f0f0', fontSize: 11, outline: 'none', marginBottom: 4 }}
+                      style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 8px', color: 'var(--text-primary,#f0f0f0)', fontSize: 11, outline: 'none', marginBottom: 4 }}
                     />
                     <div style={{ maxHeight: 120, overflowY: 'auto' }}>
                       {filtered.slice(0, 20).map(cc => {
                         const t = allTypes.find(x => x.id === cc.typeId)
                         return (
                           <div key={cc.id} onClick={() => { updateZone(zone.id, { cardId: cc.id }); setZoneEditorSearch('') }}
-                            style={{ padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: '#c0c0c0' }}
+                            style={{ padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: 'var(--text-secondary,#c0c0c0)' }}
                             onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                             <span style={{ fontSize: 11 }}>{t?.icon || '📄'}</span>
@@ -430,7 +430,7 @@ export default function GeoMapView({ card, cards, customTypes, allTypes, onUpdat
               </div>
               <div style={{ padding: '6px 12px', display: 'flex', justifyContent: 'flex-end' }}>
                 <span onClick={() => { deleteZone(zone.id); setShowZoneEditor(null) }}
-                  style={{ fontSize: 11, color: '#e05040', cursor: 'pointer', padding: '3px 8px' }}>
+                  style={{ fontSize: 11, color: 'var(--danger,#e05040)', cursor: 'pointer', padding: '3px 8px' }}>
                   Supprimer
                 </span>
               </div>
@@ -439,13 +439,13 @@ export default function GeoMapView({ card, cards, customTypes, allTypes, onUpdat
         })()}
 
         {/* Zoom */}
-        <div style={{ position: 'absolute', top: 12, right: 12, fontSize: 11, color: '#2e2e2e', zIndex: 10 }}>
+        <div style={{ position: 'absolute', top: 12, right: 12, fontSize: 11, color: 'var(--text-darker,#2e2e2e)', zIndex: 10 }}>
           {Math.round(zoom * 100)}%
         </div>
 
         {/* Drawing hint */}
         {tool === 'polygon' && drawingPoints.length > 0 && (
-          <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', fontSize: 12, color: '#c8a064', background: 'rgba(10,6,1,0.85)', padding: '5px 14px', borderRadius: 8, border: '1px solid rgba(200,160,100,0.2)', zIndex: 20 }}>
+          <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', fontSize: 12, color: 'var(--accent,#c8a064)', background: 'var(--bg-panel-85,rgba(10,6,1,0.85))', padding: '5px 14px', borderRadius: 8, border: '1px solid var(--border-14)', zIndex: 20 }}>
             {drawingPoints.length < 3 ? `${3 - drawingPoints.length} point(s) minimum` : 'Double-clic ou clic près du 1er point pour fermer'}
           </div>
         )}

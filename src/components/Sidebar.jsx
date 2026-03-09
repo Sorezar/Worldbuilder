@@ -71,7 +71,7 @@ export default function Sidebar({
   const renderCard = (card, depth=0) => {
     const type  = getType(card.typeId, customTypes)
     const isOpen = openCardIds.includes(card.id)
-    const color  = type?.color || '#8a8a8a'
+    const color  = type?.color || 'var(--text-muted,#8a8a8a)'
     const isRenaming = renamingCardId === card.id
     return (
       <div key={card.id}
@@ -233,24 +233,20 @@ export default function Sidebar({
           </div>
         )}
 
-        {/* Inline + Nouveau en bas de liste */}
-        {!search && (
-          <div
-            onClick={() => setShowNewCard(true)}
-            style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', borderRadius:8, cursor:'pointer', color: 'var(--text-darker)', fontSize:12, marginTop:2, transition:'all 0.12s', fontFamily: 'var(--font-body)' }}
-            onMouseEnter={e => { e.currentTarget.style.background='var(--accent-10)'; e.currentTarget.style.color='var(--accent)' }}
-            onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='var(--text-darker)' }}
-          >
-            <span style={{ width:18, textAlign:'center', fontSize:16, lineHeight:1 }}>+</span>
-            <span>Nouveau document</span>
-          </div>
-        )}
       </div>
 
-      {/* New card popup */}
-      {showNewCard && (
-        <NewCardMenu allTypes={allTypes} onSelect={typeId=>{onCreateCard(typeId);setShowNewCard(false)}} onCreateFolder={onCreateFolder} onClose={()=>setShowNewCard(false)} />
-      )}
+      {/* New document button + inline type selector */}
+      <div style={{ padding:'6px 8px 2px', position:'relative' }}>
+        <button onClick={() => setShowNewCard(v => !v)}
+          style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'7px 0', borderRadius:8, border:'none', background: showNewCard ? 'var(--accent-15)' : 'var(--accent-10)', color: showNewCard ? 'var(--accent)' : 'var(--text-muted)', fontSize:12, cursor:'pointer', transition:'all 0.12s', fontFamily:'var(--font-body)' }}
+          onMouseEnter={e => { e.currentTarget.style.background='var(--accent-15)'; e.currentTarget.style.color='var(--accent)' }}
+          onMouseLeave={e => { if (!showNewCard) { e.currentTarget.style.background='var(--accent-10)'; e.currentTarget.style.color='var(--text-muted)' } }}>
+          <Icon name="plus" size={12} /> Nouveau document
+        </button>
+        {showNewCard && (
+          <NewCardMenu allTypes={allTypes} onSelect={typeId=>{onCreateCard(typeId);setShowNewCard(false)}} onCreateFolder={onCreateFolder} onClose={()=>setShowNewCard(false)} />
+        )}
+      </div>
 
       {/* Filter menu (portal to escape stacking context from backdropFilter) */}
       {showFilter && createPortal(
@@ -292,9 +288,13 @@ export default function Sidebar({
         document.body
       )}
 
-      {/* Footer bar */}
-      <div style={{ padding:'7px 8px', borderTop:'1px solid var(--border-06)', display:'flex', gap:4, alignItems:'center' }}>
-        <FooterBtn icon="plus" tooltip="Nouveau" color={'var(--accent)'} filled onClick={()=>setShowNewCard(true)} />
+      {/* Footer bar — quick create by type */}
+      <div style={{ padding:'5px 6px', borderTop:'1px solid var(--border-06)', display:'flex', gap:3, alignItems:'center' }}>
+        <FooterBtn emoji="📄" tooltip="Carte" color={'var(--text-muted)'} onClick={()=>onCreateCard('character')} />
+        <FooterBtn icon="folder" tooltip="Dossier" color={'var(--text-muted)'} onClick={()=>onCreateFolder('Nouveau dossier')} />
+        <FooterBtn emoji="🗺" tooltip="Carte géographique" color={'var(--text-muted)'} onClick={()=>onCreateCard('geo_map')} />
+        <FooterBtn emoji="🎨" tooltip="Canvas" color={'var(--text-muted)'} onClick={()=>onCreateCard('canvas')} />
+        <FooterBtn emoji="🌳" tooltip="Arbre généalogique" color={'var(--text-muted)'} onClick={()=>onCreateCard('family_tree')} />
       </div>
     </div>
   )
@@ -308,7 +308,7 @@ function FooterBtn({ icon, emoji, tooltip, color, filled, onClick }) {
       onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
       style={{
         padding: emoji ? '4px 7px' : '6px 8px', borderRadius:8, border:'none',
-        background: filled ? (hov ? 'var(--accent-15,rgba(200,160,100,0.15))' : 'var(--accent-10,rgba(200,160,100,0.08))') : (hov ? `${color}18` : 'rgba(255,255,255,0.03)'),
+        background: filled ? (hov ? 'var(--accent-15)' : 'var(--accent-10)') : (hov ? `${color}18` : 'rgba(255,255,255,0.03)'),
         color: hov ? color : 'var(--text-dark,#444444)',
         cursor:'pointer', transition:'all 0.12s', display:'flex', alignItems:'center', justifyContent:'center',
         fontSize: emoji ? 15 : 13, lineHeight:1,
@@ -329,7 +329,7 @@ function FolderRow({ folder, depth, isExpanded, isDragOver, onToggle, onRename, 
     <div
       onDragEnter={onDragEnter} onDragLeave={onDragLeave} onDragOver={onDragOver} onDrop={onDrop}
       onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}
-      style={{ display:'flex', alignItems:'center', gap:7, padding:`6px 10px 6px ${12+depth*14}px`, borderRadius:8, marginBottom:2, cursor:'pointer', background:isDragOver?'rgba(200,160,100,0.1)':'rgba(255,255,255,0.02)', border:isDragOver?'1px dashed rgba(200,160,100,0.3)':'1px solid transparent', transition:'all 0.1s' }}
+      style={{ display:'flex', alignItems:'center', gap:7, padding:`6px 10px 6px ${12+depth*14}px`, borderRadius:8, marginBottom:2, cursor:'pointer', background:isDragOver?'var(--accent-10)':'rgba(255,255,255,0.02)', border:isDragOver?'1px dashed var(--accent-22)':'1px solid transparent', transition:'all 0.1s' }}
     >
       <span onClick={onToggle} style={{ display:'flex', alignItems:'center', gap:6, flex:1, overflow:'hidden' }}>
         <Icon name={isExpanded?'folder_open':'folder'} size={13} style={{ color:'var(--accent,#c8a064)', opacity:0.55, flexShrink:0 }} />
@@ -337,7 +337,7 @@ function FolderRow({ folder, depth, isExpanded, isDragOver, onToggle, onRename, 
           ? <input autoFocus value={draft} onChange={e=>setDraft(e.target.value)} onBlur={commit}
               onKeyDown={e=>{if(e.key==='Enter')commit();if(e.key==='Escape'){setDraft(folder.name);setRenaming(false)}}}
               onClick={e=>e.stopPropagation()}
-              style={{ flex:1, background:'rgba(255,255,255,0.07)', border:'1px solid var(--accent-22,rgba(200,160,100,0.35))', borderRadius:4, padding:'1px 5px', color:'var(--text-primary,#f0f0f0)', fontSize:12, outline:'none' }} />
+              style={{ flex:1, background:'rgba(255,255,255,0.07)', border:'1px solid var(--accent-25)', borderRadius:4, padding:'1px 5px', color:'var(--text-primary,#f0f0f0)', fontSize:12, outline:'none' }} />
           : <span onDoubleClick={e=>{e.stopPropagation();setRenaming(true)}} style={{ fontSize:12.5, color:'var(--text-muted,#8a8a8a)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontFamily:"var(--font-body)" }}>{folder.name}</span>
         }
       </span>
@@ -367,8 +367,8 @@ const FilterMenu = React.forwardRef(function FilterMenu({ style: posStyle, allTy
   return (
     <div ref={ref} style={{
       zIndex:900,
-      background:'rgba(10,6,1,0.92)', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)',
-      border:'1px solid rgba(255,200,120,0.14)', borderRadius:14, overflow:'hidden',
+      background:'var(--bg-panel-92,rgba(10,6,1,0.92))', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)',
+      border:'1px solid var(--border-14,rgba(255,200,120,0.14))', borderRadius:14, overflow:'hidden',
       boxShadow:'0 8px 40px rgba(0,0,0,0.8)', width:220,
       ...posStyle,
     }}>
@@ -467,7 +467,7 @@ function CardContextMenu({ x, y, card, onSelect, onRename, onPin, onDuplicate, o
     { icon: '🗑', label: 'Supprimer', action: onDelete, danger: true },
   ]
   return (
-    <div ref={ref} style={{ ...style, background:'rgba(10,6,1,0.92)', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid rgba(255,200,120,0.14)', borderRadius:12, overflow:'hidden', boxShadow:'0 8px 40px rgba(0,0,0,0.8)', width:180, padding:'4px 0' }}>
+    <div ref={ref} style={{ ...style, background:'var(--bg-panel-92,rgba(10,6,1,0.92))', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid var(--border-14,rgba(255,200,120,0.14))', borderRadius:12, overflow:'hidden', boxShadow:'0 8px 40px rgba(0,0,0,0.8)', width:180, padding:'4px 0' }}>
       {items.map((item, i) => (
         <ContextMenuItem key={i} icon={item.icon} label={item.label} danger={item.danger} onClick={item.action} />
       ))}
@@ -481,7 +481,7 @@ function ContextMenuItem({ icon, label, danger, onClick }) {
     <div onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
         display:'flex', alignItems:'center', gap:9, padding:'7px 14px', cursor:'pointer',
-        color: danger ? (hov ? '#ef4444' : '#a04030') : (hov ? '#f0f0f0' : '#8a8a8a'),
+        color: danger ? (hov ? 'var(--danger,#ef4444)' : 'var(--danger-muted,#a04030)') : (hov ? 'var(--text-primary,#f0f0f0)' : 'var(--text-muted,#8a8a8a)'),
         background: hov ? 'rgba(255,255,255,0.05)' : 'transparent', transition:'all 0.08s',
         fontSize:12.5, fontFamily:"var(--font-body)",
       }}>
@@ -510,9 +510,9 @@ function NewCardMenu({ allTypes, onSelect, onCreateFolder, onClose }) {
   ]
   const menuItemStyle = { flex:1, display:'flex', alignItems:'center', gap:9, padding:'8px 12px', cursor:'pointer', fontSize:13, color:'var(--text-secondary,#c0c0c0)', borderRadius:7, transition:'background 0.08s' }
   return (
-    <div ref={ref} style={{ position:'absolute', bottom:52, left:8, right:8, zIndex:300, background:'rgba(10,6,1,0.85)', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid rgba(255,200,120,0.14)', borderRadius:14, overflow:'hidden', boxShadow:'0 -8px 40px rgba(0,0,0,0.8)' }}>
+    <div ref={ref} style={{ position:'absolute', bottom:'100%', left:0, right:0, zIndex:300, marginBottom:4, background:'var(--bg-panel-85,rgba(10,6,1,0.85))', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid var(--border-14)', borderRadius:14, overflow:'hidden', boxShadow:'0 -8px 40px rgba(0,0,0,0.8)' }}>
       <div style={{ padding:'9px 14px', borderBottom:'1px solid rgba(255,255,255,0.05)', fontSize:11, color:'var(--text-dim,#5a5a5a)', textTransform:'uppercase', letterSpacing:'0.07em' }}>
-        Nouveau document
+        Sélectionnez un type
       </div>
       <div style={{ maxHeight:320, overflowY:'auto', padding:'4px 6px' }}>
         {rootTypes.map(type => {
@@ -566,7 +566,7 @@ function NewCardMenu({ allTypes, onSelect, onCreateFolder, onClose }) {
               onKeyDown={e => { if(e.key==='Enter'&&folderName.trim()){onCreateFolder(folderName.trim());onClose()}; if(e.key==='Escape'){setFolderMode(false);setFolderName('')} }}
               onBlur={() => { if(folderName.trim()) { onCreateFolder(folderName.trim()); onClose() } else { setFolderMode(false) } }}
               placeholder="Nom du dossier…"
-              style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(200,160,100,0.3)', borderRadius:6, padding:'6px 8px', color:'var(--text-primary,#f0f0f0)', fontSize:12, outline:'none', boxSizing:'border-box' }}
+              style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid var(--accent-30)', borderRadius:6, padding:'6px 8px', color:'var(--text-primary,#f0f0f0)', fontSize:12, outline:'none', boxSizing:'border-box' }}
             />
           </div>
         ) : (

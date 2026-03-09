@@ -150,9 +150,9 @@ function FilterChip({ label, active, onClick, color }) {
   return (
     <span onClick={onClick} style={{
       padding: '5px 12px', borderRadius: 10, cursor: 'pointer', fontSize: 12,
-      background: active ? (color ? color + '20' : 'var(--accent-15,rgba(200,160,100,0.15))') : 'rgba(255,255,255,0.04)',
+      background: active ? (color ? color + '20' : 'var(--accent-15)') : 'rgba(255,255,255,0.04)',
       color: active ? (color || 'var(--accent,#c8a064)') : 'var(--text-muted,#8a8a8a)',
-      border: `1px solid ${active ? (color ? color + '35' : 'var(--accent-22,rgba(200,160,100,0.25))') : 'transparent'}`,
+      border: `1px solid ${active ? (color ? color + '35' : 'var(--accent-22)') : 'transparent'}`,
       transition: 'all 0.1s',
     }}>
       {label}

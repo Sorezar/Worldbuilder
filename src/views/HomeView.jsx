@@ -28,7 +28,7 @@ export default function HomeView({ world, setWorld, cards, customTypes, onOpenCa
           <div style={{ flex: 1, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
             <input autoFocus value={welcomeDraft} onChange={e => setWelcomeDraft(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') saveWelcome(); if (e.key === 'Escape') setEditingWelcome(false) }}
-              style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid var(--accent-22,rgba(200,160,100,0.4))', color: 'var(--text-secondary,#c0c0c0)', fontSize: 14, outline: 'none', paddingBottom: 2 }}
+              style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid var(--accent-22)', color: 'var(--text-secondary,#c0c0c0)', fontSize: 14, outline: 'none', paddingBottom: 2 }}
             />
             <Btn size="sm" variant="primary" onClick={saveWelcome}><Icon name="check" size={12} /></Btn>
             <Btn size="sm" variant="ghost" onClick={() => setEditingWelcome(false)}><Icon name="x" size={12} /></Btn>
@@ -64,7 +64,7 @@ export default function HomeView({ world, setWorld, cards, customTypes, onOpenCa
               ))}
               <div onClick={() => onCreateCard('character')}
                 style={{ width: 148, minHeight: 118, borderRadius: 12, cursor: 'pointer', border: '1px dashed rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--text-dark,#444444)', fontSize: 13, transition: 'all 0.15s' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent-22,rgba(200,160,100,0.3))'; e.currentTarget.style.color = 'var(--accent,#c8a064)' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent-22)'; e.currentTarget.style.color = 'var(--accent,#c8a064)' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'var(--text-dark,#444444)' }}
               >
                 <Icon name="plus" size={20} />Nouveau
@@ -393,7 +393,8 @@ function ExplorerContent({ world, onApply, customPresets, onDeletePreset }) {
               onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; if(!isActive) e.currentTarget.style.borderColor='rgba(255,255,255,0.04)' }}
             >
               {/* Image */}
-              <div style={{ height:110, backgroundImage: p.bgImage ? `url(${p.bgImage})` : undefined, backgroundSize:'cover', backgroundPosition:'center', position:'relative', background: p.bgImage ? undefined : derived.defaultBg }}>
+              <div style={{ height:110, position:'relative', overflow:'hidden', background: derived.defaultBg }}>
+                {p.bgImage && <img src={p.bgImage.replace('w=1600','w=400')} alt="" loading="lazy" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} />}
                 <div style={{ position:'absolute', inset:0, background:`linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.1) 60%)` }} />
                 <div style={{ position:'absolute', bottom:10, left:12, right:12 }}>
                   <div style={{ fontFamily: titleFont?.css, fontSize:15, fontWeight:600, color:'#fff', textShadow:'0 1px 6px rgba(0,0,0,0.9)', lineHeight:1.2, marginBottom:3 }}>{p.name}</div>
@@ -459,7 +460,9 @@ function EditionContent({ world, onUpdate, onSavePreset }) {
           </div>
           {ALL_BG_URLS.map((url,i) => (
             <div key={i} onClick={() => { setBgUrl(url); set({ bgImage:url }) }}
-              style={{ width:30, height:30, borderRadius:6, backgroundImage:`url(${url})`, backgroundSize:'cover', backgroundPosition:'center', cursor:'pointer', border: world.bgImage===url ? '2px solid var(--accent,#c8a064)' : '2px solid transparent', transition:'border 0.1s' }} />
+              style={{ width:30, height:30, borderRadius:6, overflow:'hidden', cursor:'pointer', border: world.bgImage===url ? '2px solid var(--accent,#c8a064)' : '2px solid transparent', transition:'border 0.1s', background:'rgba(255,255,255,0.04)' }}>
+              <img src={url.replace('w=1600','w=100')} alt="" loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+            </div>
           ))}
         </div>
 
@@ -589,7 +592,7 @@ function SettingsModal({ world, onUpdateWorld, cards, onClose }) {
         <div>
           <label style={{ fontSize: 12, color: 'var(--text-dim,#5a5a5a)', display: 'block', marginBottom: 6 }}>Nom du monde</label>
           <input value={name} onChange={e => setName(e.target.value)}
-            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 8, padding: '8px 12px', color: '#f0f0f0', fontSize: 13, outline: 'none' }}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 8, padding: '8px 12px', color: 'var(--text-primary,#f0f0f0)', fontSize: 13, outline: 'none' }}
           />
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>

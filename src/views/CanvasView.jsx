@@ -204,7 +204,7 @@ export default function CanvasView({ card, cards, customTypes, allTypes, onUpdat
         </svg>
 
         {/* Zoom indicator */}
-        <div style={{ position: 'absolute', top: 12, right: 12, fontSize: 11, color: '#2e2e2e', zIndex: 10 }}>
+        <div style={{ position: 'absolute', top: 12, right: 12, fontSize: 11, color: 'var(--text-darker,#2e2e2e)', zIndex: 10 }}>
           {Math.round(zoom * 100)}%
         </div>
 
@@ -228,11 +228,11 @@ function CanvasCard({ el, isSel, cards, allTypes, onMouseDown }) {
   return (
     <g onMouseDown={onMouseDown} style={{ cursor: 'pointer' }}>
       <rect x={el.x} y={el.y} width={el.w || 150} height={el.h || 60} rx={10}
-        fill="rgba(10,6,1,0.8)" stroke={isSel ? '#c8a064' : 'rgba(255,200,120,0.15)'} strokeWidth={isSel ? 2 : 1} />
+        fill="var(--bg-panel-85,rgba(10,6,1,0.8))" stroke={isSel ? 'var(--accent,#c8a064)' : 'var(--border-14,rgba(255,200,120,0.15))'} strokeWidth={isSel ? 2 : 1} />
       {refCard?.image && (
         <image href={refCard.image} x={el.x + 10} y={el.y + 10} width={36} height={36} clipPath="inset(0 round 6px)" />
       )}
-      <text x={el.x + (refCard?.image ? 54 : 12)} y={el.y + 24} fontSize={12} fill="#f0f0f0" fontFamily="'DM Sans', sans-serif">
+      <text x={el.x + (refCard?.image ? 54 : 12)} y={el.y + 24} fontSize={12} fill="var(--text-primary,#f0f0f0)" fontFamily="var(--font-body)">
         {refCard ? refCard.name : '???'}
       </text>
       {type && (
@@ -254,7 +254,7 @@ function CanvasText({ el, isSel, editing, onMouseDown, onChange, onDone }) {
         <input autoFocus value={draft} onChange={e => setDraft(e.target.value)}
           onBlur={() => { onChange(draft); onDone() }}
           onKeyDown={e => { if (e.key === 'Enter') { onChange(draft); onDone() }; if (e.key === 'Escape') onDone() }}
-          style={{ background: 'rgba(10,6,1,0.9)', border: '1px solid rgba(200,160,100,0.4)', borderRadius: 4, padding: '2px 6px', color: el.color || '#f0f0f0', fontSize: el.fontSize || 16, fontFamily: "'DM Sans', sans-serif", outline: 'none', width: '100%' }}
+          style={{ background: 'var(--bg-panel-92,rgba(10,6,1,0.9))', border: '1px solid var(--border-14)', borderRadius: 4, padding: '2px 6px', color: el.color || 'var(--text-primary,#f0f0f0)', fontSize: el.fontSize || 16, fontFamily: "'DM Sans', sans-serif", outline: 'none', width: '100%' }}
         />
       </foreignObject>
     )
@@ -263,7 +263,7 @@ function CanvasText({ el, isSel, editing, onMouseDown, onChange, onDone }) {
     <text x={el.x} y={el.y} fontSize={el.fontSize || 16} fill={el.color || '#f0f0f0'}
       fontFamily="'DM Sans', sans-serif" style={{ cursor: 'pointer' }}
       onMouseDown={onMouseDown}
-      stroke={isSel ? 'rgba(200,160,100,0.3)' : 'none'} strokeWidth={isSel ? 4 : 0} paintOrder="stroke">
+      stroke={isSel ? 'var(--accent-30)' : 'none'} strokeWidth={isSel ? 4 : 0} paintOrder="stroke">
       {el.text}
     </text>
   )
@@ -272,7 +272,7 @@ function CanvasText({ el, isSel, editing, onMouseDown, onChange, onDone }) {
 function CanvasImage({ el, isSel, onMouseDown }) {
   return (
     <g onMouseDown={onMouseDown} style={{ cursor: 'pointer' }}>
-      {isSel && <rect x={el.x - 2} y={el.y - 2} width={(el.w || 200) + 4} height={(el.h || 150) + 4} rx={8} fill="none" stroke="#c8a064" strokeWidth={2} strokeDasharray="6,3" />}
+      {isSel && <rect x={el.x - 2} y={el.y - 2} width={(el.w || 200) + 4} height={(el.h || 150) + 4} rx={8} fill="none" stroke="var(--accent,#c8a064)" strokeWidth={2} strokeDasharray="6,3" />}
       <image href={el.src} x={el.x} y={el.y} width={el.w || 200} height={el.h || 150} style={{ borderRadius: 6 }} />
     </g>
   )
