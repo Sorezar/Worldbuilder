@@ -83,11 +83,23 @@ export default function App() {
 
   const handleUpdateType = useCallback((typeId, patch) => {
     const isBuiltin = BUILTIN_TYPES.some(t => t.id === typeId)
-    if (!isBuiltin) { updateCustomType(typeId, patch); return }
-    const shadow = customTypes.find(t => t.id === typeId)
-    if (shadow) updateCustomType(typeId, patch)
-    else createCustomType({ ...BUILTIN_TYPES.find(t => t.id === typeId), ...patch })
-  }, [customTypes, updateCustomType, createCustomType])
+    if (!isBuiltin) { updateCustomType(typeId, patch) }
+    else {
+      const shadow = customTypes.find(t => t.id === typeId)
+      if (shadow) updateCustomType(typeId, patch)
+      else createCustomType({ ...BUILTIN_TYPES.find(t => t.id === typeId), ...patch })
+    }
+    // Propagate defaultProps order to existing cards of this type
+    if (patch.defaultProps) {
+      const newPropIds = patch.defaultProps.map(p => p.id)
+      cards.forEach(card => {
+        if (card.typeId !== typeId) return
+        // For cards with custom propOrder, reorder default props while keeping extras in place
+        const extraIds = (card.propOrder || []).filter(pid => !newPropIds.includes(pid))
+        updateCard(card.id, { propOrder: [...newPropIds, ...extraIds] })
+      })
+    }
+  }, [customTypes, updateCustomType, createCustomType, cards, updateCard])
 
   const handleSwitchWorld = useCallback((worldId) => {
     setActiveWorldId(worldId)

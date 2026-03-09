@@ -22,6 +22,8 @@ export default function Sidebar({
   const [renameDraft,     setRenameDraft]     = useState('')
   const [sortBy,          setSortBy]          = useState('manual')
   const [confirmDelete,   setConfirmDelete]   = useState(null) // { type: 'card'|'folder', id, name }
+  const [showCardTypes,   setShowCardTypes]   = useState(false)
+  const [hoverPreview,    setHoverPreview]    = useState(null) // { src, name, cardId }
 
   const allTypes = [...BUILTIN_TYPES.filter(b => !customTypes.some(c => c.id === b.id)), ...customTypes].filter(t => !t.virtual)
   const toggleFolder  = id => setExpandedFolders(prev => { const s=new Set(prev); s.has(id)?s.delete(id):s.add(id); return s })
@@ -68,54 +70,14 @@ export default function Sidebar({
     clearTimeout(dragExpandTimerRef.current)
   }
 
-  const renderCard = (card, depth=0) => {
-    const type  = getType(card.typeId, customTypes)
-    const isOpen = openCardIds.includes(card.id)
-    const color  = type?.color || 'var(--text-muted,#8a8a8a)'
-    const isRenaming = renamingCardId === card.id
-    return (
-      <div key={card.id}
-        draggable={!isRenaming}
-        onDragStart={e => handleCardDragStart(e, card.id)}
-        onClick={() => { if (!isRenaming) onOpenCard(card.id, { toggle: true }) }}
-        onContextMenu={e => { e.preventDefault(); setContextMenu({ cardId: card.id, x: e.clientX, y: e.clientY }) }}
-        style={{
-          display:'flex', alignItems:'center', gap:9,
-          padding:`6px 10px 6px ${12+depth*14}px`,
-          borderRadius:8, cursor:'pointer', marginBottom:2,
-          background: isOpen ? 'var(--accent-10)' : 'transparent',
-          borderLeft: isOpen ? `2px solid ${color}` : '2px solid transparent',
-          transition:'all 0.12s',
-        }}
-        onMouseEnter={e => { if(!isOpen) e.currentTarget.style.background='rgba(255,255,255,0.05)'; const btn=e.currentTarget.querySelector('.card-more-btn'); if(btn) btn.style.opacity='1' }}
-        onMouseLeave={e => { if(!isOpen) e.currentTarget.style.background='transparent'; const btn=e.currentTarget.querySelector('.card-more-btn'); if(btn) btn.style.opacity='0' }}
-      >
-        {card.image
-          ? <img src={card.image} alt="" style={{ width:18,height:18,borderRadius:4,objectFit:'cover',flexShrink:0 }} />
-          : <span style={{ fontSize:13,width:18,textAlign:'center',flexShrink:0,lineHeight:1 }}>{type?.icon||'📄'}</span>
-        }
-        {isRenaming ? (
-          <input autoFocus value={renameDraft} onChange={e => setRenameDraft(e.target.value)}
-            onClick={e => e.stopPropagation()}
-            onBlur={() => { if (renameDraft.trim()) onUpdateCard(card.id, { name: renameDraft.trim() }); setRenamingCardId(null) }}
-            onKeyDown={e => { if (e.key === 'Enter') { if (renameDraft.trim()) onUpdateCard(card.id, { name: renameDraft.trim() }); setRenamingCardId(null) }; if (e.key === 'Escape') setRenamingCardId(null) }}
-            style={{ flex:1, background:'rgba(255,255,255,0.07)', border:'1px solid var(--accent-22)', borderRadius:4, padding:'1px 5px', color: 'var(--text-primary)', fontSize:12, outline:'none', minWidth:0 }}
-          />
-        ) : (
-          <span style={{ flex:1, fontSize:12.5, color:isOpen?'var(--text-primary)':'var(--text-muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontFamily: 'var(--font-body)', letterSpacing:'0.01em' }}>
-            {card.pinned && <span style={{ marginRight:4, fontSize:10, opacity:0.5 }}>📌</span>}
-            {card.name}
-          </span>
-        )}
-        {isOpen && <div style={{ width:5,height:5,borderRadius:'50%',background:color,flexShrink:0,opacity:0.7 }} />}
-        <button className="card-more-btn"
-          onClick={e => { e.stopPropagation(); setContextMenu({ cardId: card.id, x: e.clientX, y: e.clientY }) }}
-          style={{ opacity:0, background:'none', border:'none', color:'var(--text-dim,#5a5a5a)', cursor:'pointer', padding:'2px 4px', fontSize:14, lineHeight:1, flexShrink:0, transition:'opacity 0.1s' }}>
-          ⋯
-        </button>
-      </div>
-    )
-  }
+  const renderCard = (card, depth=0) => (
+    <SidebarCard key={card.id} card={card} depth={depth} customTypes={customTypes}
+      isOpen={openCardIds.includes(card.id)} isRenaming={renamingCardId===card.id}
+      renameDraft={renameDraft} setRenameDraft={setRenameDraft} setRenamingCardId={setRenamingCardId}
+      onDragStart={handleCardDragStart} onClick={onOpenCard} onUpdateCard={onUpdateCard}
+      onContextMenu={(cardId,x,y) => setContextMenu({cardId,x,y})}
+      onHoverPreview={setHoverPreview} />
+  )
 
   const renderFolder = (folder, depth=0) => {
     const isExpanded = expandedFolders.has(folder.id)
@@ -146,6 +108,7 @@ export default function Sidebar({
   const rootCards   = sortCards(cards.filter(c=>!c.folderId&&!c.parentCardId&&matchesFilter(c)))
   const hasActiveFilter = filterTypeId || sortBy !== 'manual'
   const filterBtnRef = useRef()
+  const newCardBtnRef = useRef()
   const filterMenuRef = useRef()
 
   // Close context menu on scroll
@@ -233,19 +196,19 @@ export default function Sidebar({
           </div>
         )}
 
-      </div>
+        {/* New document button + inline type selector */}
+        <div style={{ padding:'6px 0 4px' }}>
+          <button ref={newCardBtnRef} onClick={() => setShowNewCard(v => !v)}
+            style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'7px 0', borderRadius:8, border:'none', background: showNewCard ? 'var(--accent-15)' : 'var(--accent-10)', color: showNewCard ? 'var(--accent)' : 'var(--text-muted)', fontSize:12, cursor:'pointer', transition:'all 0.12s', fontFamily:'var(--font-body)' }}
+            onMouseEnter={e => { e.currentTarget.style.background='var(--accent-15)'; e.currentTarget.style.color='var(--accent)' }}
+            onMouseLeave={e => { if (!showNewCard) { e.currentTarget.style.background='var(--accent-10)'; e.currentTarget.style.color='var(--text-muted)' } }}>
+            <Icon name="plus" size={12} /> Nouveau document
+          </button>
+          {showNewCard && (
+            <NewCardMenu allTypes={allTypes} btnRef={newCardBtnRef} onSelect={typeId=>{onCreateCard(typeId);setShowNewCard(false)}} onCreateFolder={name=>{onCreateFolder(name);setShowNewCard(false)}} onClose={()=>setShowNewCard(false)} />
+          )}
+        </div>
 
-      {/* New document button + inline type selector */}
-      <div style={{ padding:'6px 8px 2px', position:'relative' }}>
-        <button onClick={() => setShowNewCard(v => !v)}
-          style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'7px 0', borderRadius:8, border:'none', background: showNewCard ? 'var(--accent-15)' : 'var(--accent-10)', color: showNewCard ? 'var(--accent)' : 'var(--text-muted)', fontSize:12, cursor:'pointer', transition:'all 0.12s', fontFamily:'var(--font-body)' }}
-          onMouseEnter={e => { e.currentTarget.style.background='var(--accent-15)'; e.currentTarget.style.color='var(--accent)' }}
-          onMouseLeave={e => { if (!showNewCard) { e.currentTarget.style.background='var(--accent-10)'; e.currentTarget.style.color='var(--text-muted)' } }}>
-          <Icon name="plus" size={12} /> Nouveau document
-        </button>
-        {showNewCard && (
-          <NewCardMenu allTypes={allTypes} onSelect={typeId=>{onCreateCard(typeId);setShowNewCard(false)}} onCreateFolder={onCreateFolder} onClose={()=>setShowNewCard(false)} />
-        )}
       </div>
 
       {/* Filter menu (portal to escape stacking context from backdropFilter) */}
@@ -289,12 +252,217 @@ export default function Sidebar({
       )}
 
       {/* Footer bar — quick create by type */}
-      <div style={{ padding:'5px 6px', borderTop:'1px solid var(--border-06)', display:'flex', gap:3, alignItems:'center' }}>
-        <FooterBtn emoji="📄" tooltip="Carte" color={'var(--text-muted)'} onClick={()=>onCreateCard('character')} />
+      <div style={{ padding:'5px 6px', borderTop:'1px solid var(--border-06)', display:'flex', gap:3, alignItems:'center', position:'relative' }}>
+        <FooterBtn emoji="📄" tooltip="Carte" color={'var(--text-muted)'} onClick={()=>setShowCardTypes(v=>!v)} />
         <FooterBtn icon="folder" tooltip="Dossier" color={'var(--text-muted)'} onClick={()=>onCreateFolder('Nouveau dossier')} />
         <FooterBtn emoji="🗺" tooltip="Carte géographique" color={'var(--text-muted)'} onClick={()=>onCreateCard('geo_map')} />
         <FooterBtn emoji="🎨" tooltip="Canvas" color={'var(--text-muted)'} onClick={()=>onCreateCard('canvas')} />
         <FooterBtn emoji="🌳" tooltip="Arbre généalogique" color={'var(--text-muted)'} onClick={()=>onCreateCard('family_tree')} />
+        {showCardTypes && (
+          <CardTypeQuickPicker allTypes={allTypes} onSelect={typeId=>{onCreateCard(typeId);setShowCardTypes(false)}} onClose={()=>setShowCardTypes(false)} />
+        )}
+      </div>
+
+      {/* Hover preview (single instance, shared across all cards) */}
+      {createPortal(
+        <SidebarPreview preview={hoverPreview} />,
+        document.body
+      )}
+    </div>
+  )
+}
+
+// ─── CardTypeQuickPicker — card types only, shown above footer ──
+function CardTypeQuickPicker({ allTypes, onSelect, onClose }) {
+  const ref = useRef()
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) onClose() }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [onClose])
+
+  const SPECIAL_IDS = ['canvas', 'family_tree', 'geo_map']
+  const cardTypes = allTypes.filter(t => !SPECIAL_IDS.includes(t.id))
+  const roots = cardTypes.filter(t => !t.parentId)
+  const [expanded, setExpanded] = useState(null)
+
+  return (
+    <div ref={ref} style={{ position:'absolute', bottom:'100%', left:0, right:0, zIndex:300, marginBottom:4, background:'var(--bg-panel-85,rgba(10,6,1,0.85))', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid var(--border-14)', borderRadius:14, overflow:'hidden', boxShadow:'0 -8px 40px rgba(0,0,0,0.8)' }}>
+      <div style={{ maxHeight:300, overflowY:'auto', padding:'4px 6px' }}>
+        {roots.map(type => {
+          const children = cardTypes.filter(t => t.parentId === type.id)
+          const isExp = expanded === type.id
+          return (
+            <div key={type.id}>
+              <div style={{ display:'flex', alignItems:'center', borderRadius:7, overflow:'hidden' }}>
+                <div onClick={() => onSelect(type.id)}
+                  style={{ flex:1, display:'flex', alignItems:'center', gap:9, padding:'8px 12px', cursor:'pointer', fontSize:13, color:'var(--text-secondary,#c0c0c0)', borderRadius:7, transition:'background 0.08s' }}
+                  onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
+                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                  <span style={{ width:18, textAlign:'center', fontSize:15 }}>{type.icon}</span>
+                  <span style={{ fontFamily:"var(--font-body)" }}>{type.name}</span>
+                </div>
+                {children.length > 0 && (
+                  <button onClick={e=>{e.stopPropagation();setExpanded(isExp?null:type.id)}}
+                    style={{ background:'none', border:'none', color:'var(--text-dark,#444444)', cursor:'pointer', padding:'8px 10px', fontSize:10 }}>
+                    <Icon name={isExp?'chevron_down':'chevron_right'} size={11} />
+                  </button>
+                )}
+              </div>
+              {isExp && children.map(child => (
+                <div key={child.id} onClick={() => onSelect(child.id)}
+                  style={{ display:'flex', alignItems:'center', gap:9, padding:'7px 12px 7px 28px', cursor:'pointer', fontSize:12, color:'var(--text-muted,#8a8a8a)', borderRadius:7 }}
+                  onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.04)'}
+                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                  <span style={{ width:16, textAlign:'center', fontSize:13 }}>{child.icon}</span>
+                  <span style={{ fontFamily:"var(--font-body)" }}>{child.name}</span>
+                </div>
+              ))}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── SidebarCard — hover preview + marquee ───────────────────
+function SidebarCard({ card, depth, customTypes, isOpen, isRenaming, renameDraft, setRenameDraft, setRenamingCardId, onDragStart, onClick, onUpdateCard, onContextMenu, onHoverPreview }) {
+  const type = getType(card.typeId, customTypes)
+  const color = type?.color || 'var(--text-muted,#8a8a8a)'
+  const [hov, setHov] = useState(false)
+  const nameRef = useRef()
+  const [overflows, setOverflows] = useState(false)
+  const [marqueeOffset, setMarqueeOffset] = useState(0)
+
+  // Detect text overflow
+  useEffect(() => {
+    if (!nameRef.current) return
+    const el = nameRef.current
+    const isOver = el.scrollWidth > el.clientWidth
+    setOverflows(isOver)
+    if (isOver) setMarqueeOffset(-(el.scrollWidth - el.clientWidth))
+  }, [card.name, hov])
+
+  // Preview image: card.image for cards, card.data.backgroundImage for geo maps
+  const previewImg = card.image || card.data?.backgroundImage || ''
+  const rowRef = useRef()
+
+  const handleEnter = e => {
+    setHov(true)
+    if (!isOpen) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+    const btn = e.currentTarget.querySelector('.card-more-btn'); if (btn) btn.style.opacity = '1'
+    if (previewImg && !isRenaming) {
+      const rect = e.currentTarget.getBoundingClientRect()
+      onHoverPreview({ src: previewImg, name: card.name, cardId: card.id, top: rect.top, left: rect.right })
+    }
+  }
+  const handleLeave = e => {
+    setHov(false)
+    if (!isOpen) e.currentTarget.style.background = 'transparent'
+    const btn = e.currentTarget.querySelector('.card-more-btn'); if (btn) btn.style.opacity = '0'
+    onHoverPreview(null)
+  }
+
+  return (
+    <div ref={rowRef}
+      draggable={!isRenaming}
+      onDragStart={e => onDragStart(e, card.id)}
+      onClick={() => { if (!isRenaming) onClick(card.id, { toggle: true }) }}
+      onContextMenu={e => { e.preventDefault(); onContextMenu(card.id, e.clientX, e.clientY) }}
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+      style={{
+        display:'flex', alignItems:'center', gap:9,
+        padding:`6px 10px 6px ${12+depth*14}px`,
+        borderRadius:8, cursor:'pointer', marginBottom:2,
+        background: isOpen ? 'var(--accent-10)' : 'transparent',
+        borderLeft: isOpen ? `2px solid ${color}` : '2px solid transparent',
+        transition:'all 0.12s', position:'relative',
+      }}
+    >
+      {card.image
+        ? <img src={card.image} alt="" style={{ width:18,height:18,borderRadius:4,objectFit:'cover',flexShrink:0 }} />
+        : <span style={{ fontSize:13,width:18,textAlign:'center',flexShrink:0,lineHeight:1 }}>{type?.icon||'📄'}</span>
+      }
+      {isRenaming ? (
+        <input autoFocus value={renameDraft} onChange={e => setRenameDraft(e.target.value)}
+          onClick={e => e.stopPropagation()}
+          onBlur={() => { if (renameDraft.trim()) onUpdateCard(card.id, { name: renameDraft.trim() }); setRenamingCardId(null) }}
+          onKeyDown={e => { if (e.key === 'Enter') { if (renameDraft.trim()) onUpdateCard(card.id, { name: renameDraft.trim() }); setRenamingCardId(null) }; if (e.key === 'Escape') setRenamingCardId(null) }}
+          style={{ flex:1, background:'rgba(255,255,255,0.07)', border:'1px solid var(--accent-22)', borderRadius:4, padding:'1px 5px', color:'var(--text-primary)', fontSize:12, outline:'none', minWidth:0 }}
+        />
+      ) : (
+        <span ref={nameRef} style={{
+          flex:1, fontSize:12.5, color:isOpen?'var(--text-primary)':'var(--text-muted)',
+          overflow:'hidden', whiteSpace:'nowrap', fontFamily:'var(--font-body)', letterSpacing:'0.01em',
+          textOverflow: hov && overflows ? 'clip' : 'ellipsis',
+        }}>
+          <span style={{
+            display:'inline-block',
+            animation: hov && overflows ? 'sidebarMarquee 3s linear infinite alternate' : 'none',
+            '--marquee-offset': `${marqueeOffset}px`,
+          }}>
+            {card.pinned && <span style={{ marginRight:4, fontSize:10, opacity:0.5 }}>📌</span>}
+            {card.name}
+          </span>
+        </span>
+      )}
+      {isOpen && <div style={{ width:5,height:5,borderRadius:'50%',background:color,flexShrink:0,opacity:0.7 }} />}
+      <button className="card-more-btn"
+        onClick={e => { e.stopPropagation(); onContextMenu(card.id, e.clientX, e.clientY) }}
+        style={{ opacity:0, background:'none', border:'none', color:'var(--text-dim,#5a5a5a)', cursor:'pointer', padding:'2px 4px', fontSize:14, lineHeight:1, flexShrink:0, transition:'opacity 0.1s' }}>
+        ⋯
+      </button>
+    </div>
+  )
+}
+
+// ─── Sidebar hover preview ───────────────────────────────────
+function SidebarPreview({ preview }) {
+  const [data, setData] = useState(null)   // last known preview data (kept during exit)
+  const [phase, setPhase] = useState('hidden') // 'hidden' | 'entering' | 'visible' | 'exiting'
+  const timerRef = useRef()
+
+  useEffect(() => {
+    clearTimeout(timerRef.current)
+    if (preview) {
+      setData(preview)
+      if (phase === 'hidden' || phase === 'exiting') {
+        // New preview appearing — animate in
+        setPhase('entering')
+        requestAnimationFrame(() => setPhase('visible'))
+      }
+      // If already visible (switching cards), just update data — no animation
+    } else if (phase === 'visible' || phase === 'entering') {
+      // Preview disappearing — animate out
+      setPhase('exiting')
+      timerRef.current = setTimeout(() => setPhase('hidden'), 180)
+    }
+  }, [preview])
+
+  if (phase === 'hidden' || !data) return null
+
+  const size = Math.max(100, Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.12))
+  const imgSize = size - 16
+  const top = Math.min(data.top, window.innerHeight - size - 40)
+  const show = phase === 'visible'
+
+  return (
+    <div style={{
+      position:'fixed', top, left: data.left + 8, zIndex:900,
+      width:size, borderRadius:10, overflow:'hidden',
+      border:'1px solid var(--border-14,rgba(255,200,120,0.14))',
+      boxShadow:'0 8px 32px rgba(0,0,0,0.8)',
+      background:'var(--bg-panel-85,rgba(10,6,1,0.85))',
+      pointerEvents:'none',
+      transform: show ? 'translateX(0)' : 'translateX(-12px)',
+      opacity: show ? 1 : 0,
+      transition:'transform 0.18s ease, opacity 0.18s ease',
+    }}>
+      <img src={data.src} alt="" style={{ width:imgSize, height:imgSize, objectFit:'cover', display:'block', borderRadius:6, margin:8, marginBottom:0 }} />
+      <div style={{ padding:'6px 8px', fontSize:Math.max(10, size*0.08), color:'var(--text-secondary,#c0c0c0)', fontFamily:'var(--font-body)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+        {data.name}
       </div>
     </div>
   )
@@ -492,92 +660,125 @@ function ContextMenuItem({ icon, label, danger, onClick }) {
 }
 
 // ─── NewCardMenu ─────────────────────────────────────────────
-function NewCardMenu({ allTypes, onSelect, onCreateFolder, onClose }) {
+function NewCardMenu({ allTypes, btnRef, onSelect, onCreateFolder, onClose }) {
+  const [step, setStep] = useState('main') // 'main' | 'type'
   const [expandedParent, setExpandedParent] = useState(null)
   const [folderMode, setFolderMode] = useState(false)
   const [folderName, setFolderName] = useState('')
   const ref = useRef()
   useEffect(() => {
-    const h = e => { if(ref.current&&!ref.current.contains(e.target)) onClose() }
+    const h = e => {
+      if (ref.current && ref.current.contains(e.target)) return
+      if (btnRef?.current && btnRef.current.contains(e.target)) return
+      onClose()
+    }
     document.addEventListener('mousedown',h)
     return () => document.removeEventListener('mousedown',h)
-  }, [onClose])
-  const rootTypes = allTypes.filter(t=>!t.parentId)
-  const SPECIAL_TYPES = [
-    { id:'canvas', icon:'🎨', name:'Canvas', color:'#06b6d4' },
-    { id:'family_tree', icon:'🌳', name:'Arbre Généalogique', color:'#a78bfa' },
-    { id:'geo_map', icon:'🗺', name:'Carte Géographique', color:'#f59e0b' },
-  ]
-  const menuItemStyle = { flex:1, display:'flex', alignItems:'center', gap:9, padding:'8px 12px', cursor:'pointer', fontSize:13, color:'var(--text-secondary,#c0c0c0)', borderRadius:7, transition:'background 0.08s' }
+  }, [onClose, btnRef])
+
+  const menuItemStyle = { display:'flex', alignItems:'center', gap:9, padding:'8px 12px', cursor:'pointer', fontSize:13, color:'var(--text-secondary,#c0c0c0)', borderRadius:7, transition:'background 0.08s' }
+
+  // Card types (exclude special workspace types)
+  const SPECIAL_IDS = ['canvas', 'family_tree', 'geo_map']
+  const cardTypes = allTypes.filter(t => !SPECIAL_IDS.includes(t.id))
+  const rootCardTypes = cardTypes.filter(t => !t.parentId)
+
   return (
-    <div ref={ref} style={{ position:'absolute', bottom:'100%', left:0, right:0, zIndex:300, marginBottom:4, background:'var(--bg-panel-85,rgba(10,6,1,0.85))', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid var(--border-14)', borderRadius:14, overflow:'hidden', boxShadow:'0 -8px 40px rgba(0,0,0,0.8)' }}>
-      <div style={{ padding:'9px 14px', borderBottom:'1px solid rgba(255,255,255,0.05)', fontSize:11, color:'var(--text-dim,#5a5a5a)', textTransform:'uppercase', letterSpacing:'0.07em' }}>
-        Sélectionnez un type
-      </div>
-      <div style={{ maxHeight:320, overflowY:'auto', padding:'4px 6px' }}>
-        {rootTypes.map(type => {
-          const children = allTypes.filter(t=>t.parentId===type.id)
-          const isExp = expandedParent===type.id
-          return (
-            <div key={type.id}>
-              <div style={{ display:'flex', alignItems:'center', borderRadius:7, overflow:'hidden' }}>
-                <div onClick={() => onSelect(type.id)} style={menuItemStyle}
-                  onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
-                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                  <span style={{ width:18,textAlign:'center',fontSize:15 }}>{type.icon}</span>
-                  <span style={{ fontFamily:"var(--font-body)" }}>{type.name}</span>
-                </div>
-                {children.length > 0 && (
-                  <button onClick={e=>{e.stopPropagation();setExpandedParent(isExp?null:type.id)}}
-                    style={{ background:'none',border:'none',color:'var(--text-dark,#444444)',cursor:'pointer',padding:'8px 10px',fontSize:10 }}>
-                    <Icon name={isExp?'chevron_down':'chevron_right'} size={11} />
-                  </button>
-                )}
-              </div>
-              {isExp && children.map(child => (
-                <div key={child.id} onClick={() => onSelect(child.id)}
-                  style={{ display:'flex', alignItems:'center', gap:9, padding:'7px 12px 7px 28px', cursor:'pointer', fontSize:12, color:'var(--text-muted,#8a8a8a)', borderRadius:7 }}
-                  onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.04)'}
-                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                  <span style={{ width:16,textAlign:'center',fontSize:13 }}>{child.icon}</span>
-                  <span style={{ fontFamily:"var(--font-body)" }}>{child.name}</span>
-                </div>
-              ))}
+    <div ref={ref} style={{ marginTop:4, background:'var(--bg-panel-85,rgba(10,6,1,0.85))', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid var(--border-14)', borderRadius:14, overflow:'hidden', boxShadow:'0 8px 40px rgba(0,0,0,0.8)' }}>
+
+      {step === 'main' ? (
+        /* ── Step 1: Category selection ── */
+        <div style={{ padding:'4px 6px' }}>
+          <div onClick={() => setStep('type')} style={menuItemStyle}
+            onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
+            onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+            <span style={{ width:18, textAlign:'center', fontSize:15 }}>📄</span>
+            <span style={{ flex:1, fontFamily:"var(--font-body)" }}>Carte</span>
+            <Icon name="chevron_right" size={10} style={{ color:'var(--text-dark,#444444)' }} />
+          </div>
+
+          {folderMode ? (
+            <div style={{ padding:'4px 12px 6px' }}>
+              <input autoFocus value={folderName} onChange={e=>setFolderName(e.target.value)}
+                onKeyDown={e => { if(e.key==='Enter'&&folderName.trim()) onCreateFolder(folderName.trim()); if(e.key==='Escape'){setFolderMode(false);setFolderName('')} }}
+                onBlur={() => { if(folderName.trim()) onCreateFolder(folderName.trim()); else setFolderMode(false) }}
+                placeholder="Nom du dossier…"
+                style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid var(--accent-30)', borderRadius:6, padding:'6px 8px', color:'var(--text-primary,#f0f0f0)', fontSize:12, outline:'none', boxSizing:'border-box' }}
+              />
             </div>
-          )
-        })}
+          ) : (
+            <div onClick={() => setFolderMode(true)} style={menuItemStyle}
+              onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
+              onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+              <span style={{ width:18, textAlign:'center', fontSize:15 }}><Icon name="folder" size={15} style={{ color:'var(--text-dim,#5a5a5a)' }} /></span>
+              <span style={{ fontFamily:"var(--font-body)" }}>Dossier</span>
+            </div>
+          )}
 
-        <div style={{ height:1, background:'rgba(255,255,255,0.05)', margin:'6px 6px' }} />
+          <div style={{ height:1, background:'rgba(255,255,255,0.05)', margin:'4px 6px' }} />
 
-        {SPECIAL_TYPES.map(st => (
-          <div key={st.id} onClick={() => onSelect(st.id)} style={menuItemStyle}
+          <div onClick={() => onSelect('geo_map')} style={menuItemStyle}
             onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
             onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-            <span style={{ width:18,textAlign:'center',fontSize:15 }}>{st.icon}</span>
-            <span style={{ fontFamily:"var(--font-body)" }}>{st.name}</span>
+            <span style={{ width:18, textAlign:'center', fontSize:15 }}>🗺</span>
+            <span style={{ fontFamily:"var(--font-body)" }}>Carte Géographique</span>
           </div>
-        ))}
-
-        <div style={{ height:1, background:'rgba(255,255,255,0.05)', margin:'6px 6px' }} />
-
-        {folderMode ? (
-          <div style={{ padding:'6px 12px' }}>
-            <input autoFocus value={folderName} onChange={e=>setFolderName(e.target.value)}
-              onKeyDown={e => { if(e.key==='Enter'&&folderName.trim()){onCreateFolder(folderName.trim());onClose()}; if(e.key==='Escape'){setFolderMode(false);setFolderName('')} }}
-              onBlur={() => { if(folderName.trim()) { onCreateFolder(folderName.trim()); onClose() } else { setFolderMode(false) } }}
-              placeholder="Nom du dossier…"
-              style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid var(--accent-30)', borderRadius:6, padding:'6px 8px', color:'var(--text-primary,#f0f0f0)', fontSize:12, outline:'none', boxSizing:'border-box' }}
-            />
-          </div>
-        ) : (
-          <div onClick={() => setFolderMode(true)} style={menuItemStyle}
+          <div onClick={() => onSelect('canvas')} style={menuItemStyle}
             onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
             onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-            <span style={{ width:18,textAlign:'center',fontSize:15 }}><Icon name="folder" size={15} style={{ color:'var(--text-dim,#5a5a5a)' }} /></span>
-            <span style={{ fontFamily:"var(--font-body)" }}>Dossier</span>
+            <span style={{ width:18, textAlign:'center', fontSize:15 }}>🎨</span>
+            <span style={{ fontFamily:"var(--font-body)" }}>Canvas</span>
           </div>
-        )}
-      </div>
+          <div onClick={() => onSelect('family_tree')} style={menuItemStyle}
+            onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
+            onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+            <span style={{ width:18, textAlign:'center', fontSize:15 }}>🌳</span>
+            <span style={{ fontFamily:"var(--font-body)" }}>Arbre Généalogique</span>
+          </div>
+        </div>
+      ) : (
+        /* ── Step 2: Card type selection ── */
+        <>
+          <div onClick={() => setStep('main')} style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 12px', borderBottom:'1px solid rgba(255,255,255,0.05)', cursor:'pointer', fontSize:11, color:'var(--text-dim,#5a5a5a)', transition:'color 0.1s' }}
+            onMouseEnter={e=>e.currentTarget.style.color='var(--text-secondary,#c0c0c0)'}
+            onMouseLeave={e=>e.currentTarget.style.color='var(--text-dim,#5a5a5a)'}>
+            <Icon name="chevron_left" size={10} /> Retour
+          </div>
+          <div style={{ maxHeight:300, overflowY:'auto', padding:'4px 6px' }}>
+            {rootCardTypes.map(type => {
+              const children = cardTypes.filter(t=>t.parentId===type.id)
+              const isExp = expandedParent===type.id
+              return (
+                <div key={type.id}>
+                  <div style={{ display:'flex', alignItems:'center', borderRadius:7, overflow:'hidden' }}>
+                    <div onClick={() => onSelect(type.id)} style={{ ...menuItemStyle, flex:1 }}
+                      onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
+                      onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                      <span style={{ width:18, textAlign:'center', fontSize:15 }}>{type.icon}</span>
+                      <span style={{ fontFamily:"var(--font-body)" }}>{type.name}</span>
+                    </div>
+                    {children.length > 0 && (
+                      <button onClick={e=>{e.stopPropagation();setExpandedParent(isExp?null:type.id)}}
+                        style={{ background:'none', border:'none', color:'var(--text-dark,#444444)', cursor:'pointer', padding:'8px 10px', fontSize:10 }}>
+                        <Icon name={isExp?'chevron_down':'chevron_right'} size={11} />
+                      </button>
+                    )}
+                  </div>
+                  {isExp && children.map(child => (
+                    <div key={child.id} onClick={() => onSelect(child.id)}
+                      style={{ display:'flex', alignItems:'center', gap:9, padding:'7px 12px 7px 28px', cursor:'pointer', fontSize:12, color:'var(--text-muted,#8a8a8a)', borderRadius:7 }}
+                      onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.04)'}
+                      onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                      <span style={{ width:16, textAlign:'center', fontSize:13 }}>{child.icon}</span>
+                      <span style={{ fontFamily:"var(--font-body)" }}>{child.name}</span>
+                    </div>
+                  ))}
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
     </div>
   )
 }

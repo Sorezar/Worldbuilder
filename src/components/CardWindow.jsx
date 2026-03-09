@@ -11,6 +11,8 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [dragPropId, setDragPropId] = useState(null)
   const [dragOverPropId, setDragOverPropId] = useState(null)
+  const [showTypePicker, setShowTypePicker] = useState(false)
+  const typePickerRef = useRef()
   const fileRef = useRef()
 
   const upd          = patch => onUpdate(card.id, patch)
@@ -109,9 +111,15 @@ export default function CardWindow({ card, cards, customTypes, onUpdate, onDelet
               style={{ background: 'transparent', border: 'none', color: 'var(--text-primary,#f0f0f0)', fontSize: 22, fontFamily: "var(--font)", fontWeight: 600, width: '100%', outline: 'none', marginBottom: 10, letterSpacing: '-0.01em' }}
             />
             {type && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', background: (type.color || '#5a5040') + '18', border: `1px solid ${type.color || '#5a5040'}28`, borderRadius: 20, fontSize: 11, color: type.color || '#8a8a8a', fontFamily: "var(--font-body)" }}>
-                {type.icon} {type.name}
-              </span>
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <span onClick={() => setShowTypePicker(v => !v)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', background: (type.color || '#5a5040') + '18', border: `1px solid ${type.color || '#5a5040'}28`, borderRadius: 20, fontSize: 11, color: type.color || '#8a8a8a', fontFamily: "var(--font-body)", cursor: 'pointer', transition: 'filter 0.1s' }}
+                  onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'}
+                  onMouseLeave={e => e.currentTarget.style.filter = ''}>
+                  {type.icon} {type.name} <Icon name="chevron_down" size={8} style={{ opacity: 0.5 }} />
+                </span>
+                {showTypePicker && <CardTypePicker ref={typePickerRef} currentTypeId={card.typeId} allTypes={allTypes} onSelect={typeId => { upd({ typeId }); setShowTypePicker(false) }} onClose={() => setShowTypePicker(false)} />}
+              </div>
             )}
           </div>
           {/* Image */}
@@ -568,6 +576,53 @@ function TypeMenuItem({ icon, label, active, onClick, color, indent }) {
     </div>
   )
 }
+
+// ─── CardTypePicker ───────────────────────────────────────────
+const CardTypePicker = React.forwardRef(function CardTypePicker({ currentTypeId, allTypes, onSelect, onClose }, fwdRef) {
+  const ref = useRef()
+  React.useImperativeHandle(fwdRef, () => ref.current)
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) onClose() }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [onClose])
+
+  const creatableTypes = (allTypes || []).filter(t => !t.virtual)
+  const roots = creatableTypes.filter(t => !t.parentId)
+  const filtered = search ? creatableTypes.filter(t => t.name.toLowerCase().includes(search.toLowerCase())) : null
+
+  return (
+    <div ref={ref} style={{
+      position: 'absolute', top: '100%', left: 0, zIndex: 500, marginTop: 4,
+      background: 'var(--bg-panel-92,rgba(10,6,1,0.92))', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
+      border: '1px solid var(--border-14)', borderRadius: 10,
+      width: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.8)', overflow: 'hidden',
+    }}>
+      <div style={{ padding: '8px 8px 4px' }}>
+        <input autoFocus value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher…"
+          style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 8px', color: 'var(--text-secondary,#c0c0c0)', fontSize: 11, outline: 'none', boxSizing: 'border-box' }}
+        />
+      </div>
+      <div style={{ maxHeight: 260, overflowY: 'auto', padding: '2px 0 4px' }}>
+        {(filtered || roots).map(t => {
+          const children = !filtered ? creatableTypes.filter(c => c.parentId === t.id) : []
+          return (
+            <React.Fragment key={t.id}>
+              <TypeMenuItem icon={t.icon} label={t.name} color={t.color}
+                active={currentTypeId === t.id} onClick={() => onSelect(t.id)} />
+              {children.map(child => (
+                <TypeMenuItem key={child.id} icon={child.icon} label={child.name} color={child.color}
+                  active={currentTypeId === child.id} onClick={() => onSelect(child.id)} indent />
+              ))}
+            </React.Fragment>
+          )
+        })}
+      </div>
+    </div>
+  )
+})
 
 // ─── CardRefPicker ────────────────────────────────────────────
 function CardRefPicker({ eligibleCards, targetTypeIds, customTypes, allTypes, onSelect, onClose, onCreateCard, onCardCreated }) {

@@ -64,7 +64,7 @@ export const BUILTIN_TYPES = [
   {
     id: 'item', name: 'Item', icon: '💎', color: '#06b6d4',
     defaultProps: [
-      { id: 'owner', name: 'Owner', fieldType: FIELD_TYPES.CARD_REF, multiple: false, targetTypeIds: ['character'] },
+      { id: 'owner', name: 'Owner', fieldType: FIELD_TYPES.CARD_REF, multiple: true, targetTypeIds: ['character'] },
     ],
   },
   { id: 'weapon', name: 'Weapon', icon: '⚔️', color: '#0891b2', parentId: 'item', defaultProps: [] },

@@ -107,6 +107,32 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
   const [props,      setProps]      = useState(type.defaultProps||[])
   const [color,      setColor]      = useState(type.color||'#c8a064')
   const [addingProp, setAddingProp] = useState(false)
+  const [dragPropId, setDragPropId] = useState(null)
+  const [dragOverInfo, setDragOverInfo] = useState(null) // { propId, position: 'above'|'below' }
+
+  const handlePropDragStart = (e, propId) => { setDragPropId(propId); e.dataTransfer.effectAllowed = 'move' }
+  const handlePropDragOver = (e, propId) => {
+    e.preventDefault()
+    if (propId === dragPropId) { setDragOverInfo(null); return }
+    const rect = e.currentTarget.getBoundingClientRect()
+    const position = e.clientY < rect.top + rect.height / 2 ? 'above' : 'below'
+    setDragOverInfo({ propId, position })
+  }
+  const handlePropDrop = (e) => {
+    e.preventDefault()
+    if (!dragPropId || !dragOverInfo || dragPropId === dragOverInfo.propId) { setDragPropId(null); setDragOverInfo(null); return }
+    const fromIdx = props.findIndex(p => p.id === dragPropId)
+    let toIdx = props.findIndex(p => p.id === dragOverInfo.propId)
+    if (fromIdx < 0 || toIdx < 0) { setDragPropId(null); setDragOverInfo(null); return }
+    const updated = [...props]
+    const [moved] = updated.splice(fromIdx, 1)
+    if (fromIdx < toIdx) toIdx--
+    if (dragOverInfo.position === 'below') toIdx++
+    updated.splice(toIdx, 0, moved)
+    setProps(updated); onUpdate({ defaultProps: updated })
+    setDragPropId(null); setDragOverInfo(null)
+  }
+  const handlePropDragEnd = () => { setDragPropId(null); setDragOverInfo(null) }
 
   const addProp = prop => {
     const updated = [...props, { ...prop, id:uid() }]
@@ -143,7 +169,12 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
         {props.length===0 && !addingProp && <p style={{ color:'var(--text-darker,#2e2e2e)', fontSize:12, marginBottom:10 }}>Aucune propriété</p>}
         <div style={{ display:'flex', flexDirection:'column', gap:4, marginBottom:8 }}>
           {props.map(p => <PropRow key={p.id} prop={p} allTypes={allTypes} onRename={n=>renameProp(p.id,n)} onRemove={()=>removeProp(p.id)}
-            onEditProp={patch => { const updated = props.map(x => x.id===p.id ? { ...x, ...patch } : x); setProps(updated); onUpdate({ defaultProps:updated }) }} />)}
+            onEditProp={patch => { const updated = props.map(x => x.id===p.id ? { ...x, ...patch } : x); setProps(updated); onUpdate({ defaultProps:updated }) }}
+            draggable onDragStart={e => handlePropDragStart(e, p.id)} onDragOver={e => handlePropDragOver(e, p.id)}
+            onDrop={handlePropDrop} onDragEnd={handlePropDragEnd}
+            isDragging={dragPropId === p.id}
+            insertBefore={dragOverInfo?.propId === p.id && dragOverInfo?.position === 'above' && dragPropId !== p.id}
+            insertAfter={dragOverInfo?.propId === p.id && dragOverInfo?.position === 'below' && dragPropId !== p.id} />)}
         </div>
         {addingProp
           ? <DropdownPropPicker allTypes={allTypes} onAdd={addProp} onCancel={() => setAddingProp(false)} />
@@ -182,107 +213,207 @@ const EMOJI_GRID = [
   '⭐','✦','◆','●','■','▲','☰','#','☀️','🌙',
 ]
 
-function PropRow({ prop, allTypes, onRename, onRemove, onEditProp }) {
-  const [editing, setEditing] = useState(false)
-  const [draft,   setDraft]   = useState(prop.name)
-  const [showTypePicker, setShowTypePicker] = useState(false)
-  const [emojiSearch, setEmojiSearch] = useState('')
-  const pickerRef = useRef()
-  const isRef    = prop.fieldType === FIELD_TYPES.CARD_REF
-  const emoji    = prop.emoji
-  const badge    = emoji || (isRef ? '🔗' : prop.fieldType==='number' ? '#' : prop.fieldType==='date' ? '📅' : 'T')
-  const targets  = isRef && prop.targetTypeIds?.length
+function PropRow({ prop, allTypes, onRename, onRemove, onEditProp, draggable, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, insertBefore, insertAfter }) {
+  const [showEditor, setShowEditor] = useState(false)
+  const isRef = prop.fieldType === FIELD_TYPES.CARD_REF
+  const emoji = prop.emoji
+  const badge = emoji || (isRef ? '🔗' : prop.fieldType==='number' ? '#' : prop.fieldType==='date' ? '📅' : 'T')
+  const targets = isRef && prop.targetTypeIds?.length
     ? prop.targetTypeIds.map(tid => allTypes.find(t=>t.id===tid)?.name||tid).join(', ')
     : null
-  const commit = () => { if(draft.trim()&&draft.trim()!==prop.name) onRename(draft.trim()); else setDraft(prop.name); setEditing(false) }
-
-  useEffect(() => {
-    if (!showTypePicker) return
-    const h = e => { if (pickerRef.current && !pickerRef.current.contains(e.target)) setShowTypePicker(false) }
-    document.addEventListener('mousedown', h)
-    return () => document.removeEventListener('mousedown', h)
-  }, [showTypePicker])
-
-  const SCALARS = [
-    { id:'text',   icon:'T',  label:'Texte',     color:'#8a8a8a' },
-    { id:'number', icon:'#',  label:'Numérique', color:'#60a5fa' },
-    { id:'date',   icon:'📅', label:'Date',      color:'#22c55e' },
-  ]
-  const creatableTypes = allTypes.filter(t => !t.virtual)
-  const roots = creatableTypes.filter(t => !t.parentId)
 
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 11px', background:'rgba(255,255,255,0.03)', borderRadius:7, border:'1px solid rgba(255,255,255,0.05)', position:'relative' }}>
-      <span onClick={() => setShowTypePicker(v => !v)} title="Changer le type"
-        style={{ fontSize:10, color:'var(--text-dark,#444444)', background: showTypePicker ? 'var(--accent-15)' : 'rgba(255,255,255,0.04)', padding:'1px 6px', borderRadius:3, flexShrink:0, cursor:'pointer', transition:'background 0.1s' }}>{badge}</span>
-      {showTypePicker && (
-        <div ref={pickerRef} style={{ position:'absolute', top:'100%', left:0, zIndex:600, marginTop:4, background:'var(--bg-panel-92,rgba(10,6,1,0.92))', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)', border:'1px solid var(--border-14,rgba(255,200,120,0.14))', borderRadius:12, overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.7)', width:220 }}>
-          <div style={{ padding:'6px 10px 4px', fontSize:10, color:'var(--text-darker,#2e2e2e)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Type</div>
-          {SCALARS.map(s => {
-            const active = !isRef && prop.fieldType === s.id
-            return <TypeMenuItem key={s.id} icon={s.icon} label={s.label} color={s.color} active={active}
-              onClick={() => { onEditProp({ fieldType: s.id, targetTypeIds: undefined, multiple: false }); setShowTypePicker(false) }} />
-          })}
-          <div style={{ height:1, background:'rgba(255,255,255,0.05)', margin:'4px 8px' }} />
-          <div style={{ padding:'4px 10px 2px', fontSize:10, color:'var(--text-darker,#2e2e2e)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Cartes</div>
-          <div style={{ maxHeight:200, overflowY:'auto' }}>
-            {roots.map(rt => {
-              const children = creatableTypes.filter(t => t.parentId === rt.id)
-              const active = isRef && prop.targetTypeIds?.includes(rt.id)
-              return <React.Fragment key={rt.id}>
-                <TypeMenuItem icon={rt.icon} label={rt.name} color={rt.color} active={active}
-                  onClick={() => { onEditProp({ fieldType:'card_ref', targetTypeIds:[rt.id], multiple:true }); setShowTypePicker(false) }} />
-                {children.map(ch => {
-                  const chActive = isRef && prop.targetTypeIds?.includes(ch.id)
-                  return <TypeMenuItem key={ch.id} icon={ch.icon} label={ch.name} color={ch.color} active={chActive} indent
-                    onClick={() => { onEditProp({ fieldType:'card_ref', targetTypeIds:[ch.id], multiple:true }); setShowTypePicker(false) }} />
-                })}
-              </React.Fragment>
-            })}
-          </div>
-          <div style={{ height:1, background:'rgba(255,255,255,0.05)', margin:'4px 8px' }} />
-          <div style={{ padding:'4px 10px 2px', fontSize:10, color:'var(--text-darker,#2e2e2e)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Emoji</div>
-          <div style={{ padding:'4px 8px 4px' }}>
-            <input value={emojiSearch} onChange={e => setEmojiSearch(e.target.value)}
-              placeholder="Rechercher…"
-              style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:6, padding:'4px 8px', color:'var(--text-secondary,#c0c0c0)', fontSize:11, outline:'none', marginBottom:4, boxSizing:'border-box' }}
-            />
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(10,1fr)', gap:2, padding:'0 8px 8px', maxHeight:140, overflowY:'auto' }}>
-            {(emojiSearch ? EMOJI_GRID.filter(e => e.includes(emojiSearch)) : EMOJI_GRID).map((em,i) => (
-              <button key={i} onClick={() => { onEditProp({ emoji: em }); setShowTypePicker(false); setEmojiSearch('') }}
-                style={{ width:'100%', aspectRatio:'1', display:'flex', alignItems:'center', justifyContent:'center', background: prop.emoji===em ? 'var(--accent-18)' : 'transparent', border:'none', borderRadius:4, cursor:'pointer', fontSize:13, padding:0, transition:'background 0.08s' }}
-                onMouseEnter={e => { if(prop.emoji!==em) e.currentTarget.style.background='rgba(255,255,255,0.08)' }}
-                onMouseLeave={e => { if(prop.emoji!==em) e.currentTarget.style.background='transparent' }}>
+    <div draggable={draggable} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} onDragEnd={onDragEnd}
+      style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 11px', background:'rgba(255,255,255,0.03)', borderRadius:7, border:'1px solid rgba(255,255,255,0.05)', position:'relative', opacity: isDragging ? 0.4 : 1, transition:'opacity 0.1s' }}>
+      {insertBefore && <div style={{ position:'absolute', top:-2, left:8, right:8, height:2, background:'var(--accent)', borderRadius:1, pointerEvents:'none' }} />}
+      {insertAfter && <div style={{ position:'absolute', bottom:-2, left:8, right:8, height:2, background:'var(--accent)', borderRadius:1, pointerEvents:'none' }} />}
+      <span style={{ fontSize:11, color:'var(--text-darker,#2e2e2e)', cursor:'grab', flexShrink:0, lineHeight:1, letterSpacing:1, userSelect:'none' }}>⠿</span>
+      <span onClick={() => setShowEditor(true)} title="Modifier"
+        style={{ fontSize:10, color:'var(--text-dark,#444444)', background: showEditor ? 'var(--accent-15)' : 'rgba(255,255,255,0.04)', padding:'1px 6px', borderRadius:3, flexShrink:0, cursor:'pointer', transition:'background 0.1s' }}>{badge}</span>
+      <span onClick={() => setShowEditor(true)} title="Cliquer pour modifier"
+        style={{ fontSize:12, flex:1, color:'var(--text-secondary,#c0c0c0)', cursor:'pointer', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{prop.name}</span>
+      {targets && <span style={{ fontSize:10, color:'var(--text-dim,#5a5a5a)', flexShrink:0 }}>→ {targets}</span>}
+      {prop.multiple && <span style={{ fontSize:9, color:'var(--text-dark,#444444)', flexShrink:0 }}>×n</span>}
+      <button onClick={onRemove} style={{ background:'none', border:'none', color:'var(--text-darker,#2e2e2e)', cursor:'pointer', padding:'0 2px', fontSize:10, lineHeight:1, flexShrink:0 }}
+        onMouseEnter={e=>e.currentTarget.style.color='var(--danger,#e05040)'} onMouseLeave={e=>e.currentTarget.style.color='var(--text-darker,#2e2e2e)'}>✕</button>
+      {showEditor && (
+        <PropEditorPopup prop={prop} displayName={prop.name} onRename={onRename} onRemove={onRemove}
+          onEditProp={onEditProp} allTypes={allTypes} onClose={() => setShowEditor(false)} />
+      )}
+    </div>
+  )
+}
+
+// ─── PropEditorPopup (same as CardWindow) ─────────────────────
+function PropEditorPopup({ prop, displayName, onRename, onRemove, onEditProp, allTypes, onClose }) {
+  const [name, setName] = useState(displayName || prop.name)
+  const [emoji, setEmoji] = useState(prop.emoji || '')
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [emojiSearch, setEmojiSearch] = useState('')
+  const [showTypeMenu, setShowTypeMenu] = useState(false)
+  const ref = useRef()
+
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) onClose() }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [onClose])
+
+  const PRIMITIVE_TYPES = [
+    { id: 'text', label: 'Texte', icon: '☰' },
+    { id: 'number', label: 'Numérique', icon: '#' },
+    { id: 'date', label: 'Date', icon: '📅' },
+  ]
+  const cardTypes = (allTypes || []).filter(t => !t.virtual)
+
+  const getCurrentTypeLabel = () => {
+    const prim = PRIMITIVE_TYPES.find(t => t.id === prop.fieldType)
+    if (prim && prop.fieldType !== 'card_ref') return prim.label
+    const targetId = prop.targetTypeIds?.[0]
+    if (targetId) {
+      const ct = (allTypes || []).find(t => t.id === targetId)
+      if (ct) return ct.name
+    }
+    return 'Texte'
+  }
+
+  const commitName = () => {
+    if (name.trim() && name.trim() !== (displayName || prop.name)) onRename?.(name.trim())
+  }
+  const selectEmoji = em => {
+    setEmoji(em)
+    if (onEditProp) onEditProp({ emoji: em })
+    setShowEmojiPicker(false)
+  }
+  const changeToPrimitive = typeId => {
+    if (onEditProp) onEditProp({ fieldType: typeId, targetTypeIds: undefined, multiple: false })
+    setShowTypeMenu(false)
+  }
+  const changeToCardRef = cardTypeId => {
+    if (onEditProp) onEditProp({ fieldType: 'card_ref', targetTypeIds: [cardTypeId], multiple: true })
+    setShowTypeMenu(false)
+  }
+  const isCurrentPrimitive = id => prop.fieldType === id && prop.fieldType !== 'card_ref'
+  const isCurrentCardRef = typeId => prop.fieldType === 'card_ref' && prop.targetTypeIds?.[0] === typeId
+
+  const filteredEmojis = emojiSearch ? EMOJI_GRID.filter(e => e.includes(emojiSearch)) : EMOJI_GRID
+
+  return (
+    <div ref={ref} style={{
+      position: 'absolute', top: '100%', left: -16, zIndex: 500, marginTop: 2,
+      background: 'var(--bg-panel-92,rgba(10,6,1,0.92))', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
+      border: '1px solid var(--border-14)', borderRadius: 12,
+      width: 240, boxShadow: '0 8px 32px rgba(0,0,0,0.8)', overflow: 'visible',
+    }}>
+      {/* Emoji + Name */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
+        <button onClick={() => { setShowEmojiPicker(v => !v); setShowTypeMenu(false) }}
+          style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid var(--border-14)', background: showEmojiPicker ? 'var(--accent-18)' : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14, flexShrink: 0 }}>
+          {emoji || '☰'}
+        </button>
+        <input autoFocus value={name} onChange={e => setName(e.target.value)}
+          onBlur={commitName}
+          onKeyDown={e => { if (e.key === 'Enter') { commitName(); onClose() } if (e.key === 'Escape') onClose() }}
+          style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 8px', color: 'var(--text-primary,#f0f0f0)', fontSize: 13, outline: 'none', fontFamily: "var(--font-body)" }}
+        />
+      </div>
+
+      {/* Emoji picker panel */}
+      {showEmojiPicker && (
+        <div style={{ padding: '8px 10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <input value={emojiSearch} onChange={e => setEmojiSearch(e.target.value)}
+            placeholder="Rechercher des icônes…"
+            style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 8px', color: 'var(--text-secondary,#c0c0c0)', fontSize: 11, outline: 'none', marginBottom: 6, boxSizing: 'border-box' }}
+          />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 2, maxHeight: 140, overflowY: 'auto' }}>
+            {filteredEmojis.map((em, i) => (
+              <button key={i} onClick={() => selectEmoji(em)}
+                style={{ width: '100%', aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', background: emoji === em ? 'var(--accent-20)' : 'transparent', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 13, padding: 0, transition: 'background 0.08s' }}
+                onMouseEnter={e => { if (emoji !== em) e.currentTarget.style.background = 'rgba(255,255,255,0.08)' }}
+                onMouseLeave={e => { if (emoji !== em) e.currentTarget.style.background = 'transparent' }}>
                 {em}
               </button>
             ))}
           </div>
         </div>
       )}
-      {editing
-        ? <input autoFocus value={draft} onChange={e=>setDraft(e.target.value)} onBlur={commit}
-            onKeyDown={e => { if(e.key==='Enter') commit(); if(e.key==='Escape') { setDraft(prop.name); setEditing(false) } }}
-            style={{ flex:1, background:'transparent', border:'none', borderBottom:'1px solid var(--accent-40)', color:'var(--text-primary,#f0f0f0)', fontSize:12, outline:'none' }} />
-        : <span onClick={() => setEditing(true)} title="Cliquer pour renommer"
-            style={{ fontSize:12, flex:1, color:'var(--text-secondary,#c0c0c0)', cursor:'text' }}>{prop.name}</span>
-      }
-      {targets && <span style={{ fontSize:10, color:'var(--text-dim,#5a5a5a)', flexShrink:0 }}>→ {targets}</span>}
-      {prop.multiple && <span style={{ fontSize:9, color:'var(--text-dark,#444444)', flexShrink:0 }}>×n</span>}
-      <button onClick={onRemove} style={{ background:'none', border:'none', color:'var(--text-darker,#2e2e2e)', cursor:'pointer', padding:'0 2px', fontSize:10, lineHeight:1, flexShrink:0 }}
-        onMouseEnter={e=>e.currentTarget.style.color='var(--danger,#e05040)'} onMouseLeave={e=>e.currentTarget.style.color='var(--text-darker,#2e2e2e)'}>✕</button>
+
+      {/* Type */}
+      <div style={{ position: 'relative' }}>
+        <div onClick={() => { setShowTypeMenu(v => !v); setShowEmojiPicker(false) }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'background 0.1s' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+          <span style={{ fontSize: 12, color: 'var(--text-dim,#5a5a5a)' }}>Type</span>
+          <span style={{ fontSize: 12, color: 'var(--text-muted,#8a8a8a)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            {getCurrentTypeLabel()}
+            <Icon name="chevron_right" size={9} style={{ color: 'var(--text-dark,#444444)' }} />
+          </span>
+        </div>
+
+        {showTypeMenu && (
+          <div style={{
+            position: 'absolute', top: 0, left: '100%', marginLeft: 4, zIndex: 510,
+            background: 'var(--bg-panel-92,rgba(10,6,1,0.92))', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
+            border: '1px solid var(--border-14)', borderRadius: 10,
+            width: 180, boxShadow: '0 8px 32px rgba(0,0,0,0.8)', overflow: 'hidden', maxHeight: 320, overflowY: 'auto',
+          }}>
+            {PRIMITIVE_TYPES.map(opt => (
+              <TypeMenuItem key={opt.id} icon={opt.icon} label={opt.label}
+                active={isCurrentPrimitive(opt.id)} onClick={() => changeToPrimitive(opt.id)} />
+            ))}
+            {cardTypes.length > 0 && (
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '2px 0', padding: '4px 11px 2px' }}>
+                <span style={{ fontSize: 9, color: 'var(--text-darker,#2e2e2e)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Types de cartes</span>
+              </div>
+            )}
+            {cardTypes.filter(ct => !ct.parentId).map(ct => {
+              const children = cardTypes.filter(c => c.parentId === ct.id)
+              return (
+                <React.Fragment key={ct.id}>
+                  <TypeMenuItem icon={ct.icon} label={ct.name}
+                    active={isCurrentCardRef(ct.id)} onClick={() => changeToCardRef(ct.id)}
+                    color={ct.color} />
+                  {children.map(child => (
+                    <TypeMenuItem key={child.id} icon={child.icon} label={child.name}
+                      active={isCurrentCardRef(child.id)} onClick={() => changeToCardRef(child.id)}
+                      color={child.color} indent />
+                  ))}
+                </React.Fragment>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Delete */}
+      {onRemove && (
+        <div onClick={() => { onRemove(); onClose() }}
+          style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 12px', cursor: 'pointer', color: 'var(--danger-muted,#8a5a5a)', fontSize: 12, transition: 'background 0.1s' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--danger-06)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+          <Icon name="trash" size={12} />
+          <span>Supprimer</span>
+        </div>
+      )}
     </div>
   )
 }
 
-function TypeMenuItem({ icon, label, color, active, indent, onClick }) {
-  const [hov, setHov] = useState(false)
+function TypeMenuItem({ icon, label, active, onClick, color, indent }) {
   return (
-    <div onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ display:'flex', alignItems:'center', gap:8, padding:`5px 10px 5px ${indent ? 26 : 10}px`, cursor:'pointer', fontSize: indent ? 11 : 12, color: active ? 'var(--accent,#c8a064)' : 'var(--text-muted,#8a8a8a)', background: hov ? 'rgba(255,255,255,0.05)' : 'transparent', transition:'background 0.08s' }}>
-      <span style={{ width:16, textAlign:'center', fontSize: indent ? 12 : 13, flexShrink:0 }}>{icon}</span>
-      <span style={{ flex:1 }}>{label}</span>
-      {active && <Icon name="check" size={10} style={{ color:'var(--accent,#c8a064)', flexShrink:0 }} />}
+    <div onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8, padding: `7px 11px 7px ${indent ? 25 : 11}px`, cursor: 'pointer', fontSize: indent ? 11 : 12,
+        color: active ? 'var(--accent,#c8a064)' : (color || 'var(--text-muted,#8a8a8a)'),
+        background: active ? 'var(--accent-10)' : 'transparent',
+        transition: 'background 0.08s',
+      }}
+      onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+      onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}>
+      <span style={{ width: 18, textAlign: 'center', fontSize: 13 }}>{icon}</span>
+      <span style={{ fontFamily: "var(--font-body)", flex: 1 }}>{label}</span>
+      {active && <Icon name="check" size={11} style={{ color: 'var(--accent,#c8a064)', flexShrink: 0 }} />}
     </div>
   )
 }

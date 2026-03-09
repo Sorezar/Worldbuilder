@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { BUILTIN_TYPES, getEffectiveProps } from '../data/types.js'
+import { BUILTIN_TYPES, FIELD_TYPES, getEffectiveProps, isDescendantOf } from '../data/types.js'
 
 // Re-export theme data from dedicated config file
 export { TITLE_FONTS, BODY_FONTS, GENRE_PRESETS, resolveTheme } from '../data/themes.js'
@@ -160,8 +160,74 @@ export function useStore() {
   }, [customTypes, resolvedWorldId])
 
   const updateCard = useCallback((id, patch) => {
-    setCardsState(prev => { const next = prev.map(c => c.id === id ? { ...c, ...patch, updatedAt: Date.now() } : c); save(dk('cards'), next); return next })
-  }, [resolvedWorldId])
+    setCardsState(prev => {
+      let next = prev.map(c => c.id === id ? { ...c, ...patch, updatedAt: Date.now() } : c)
+
+      // ── Bidirectional card_ref sync ──
+      if (patch.props) {
+        const oldCard = prev.find(c => c.id === id)
+        if (oldCard) {
+          const oldProps = oldCard.props || {}
+          const newProps = patch.props
+          const cardTypeId = (patch.typeId || oldCard.typeId)
+          const srcEffective = getEffectiveProps(cardTypeId, customTypes)
+
+          srcEffective.forEach(srcProp => {
+            if (srcProp.fieldType !== FIELD_TYPES.CARD_REF) return
+            const oldVal = oldProps[srcProp.id]
+            const newVal = newProps[srcProp.id]
+            const oldRefs = Array.isArray(oldVal) ? oldVal : (oldVal ? [oldVal] : [])
+            const newRefs = Array.isArray(newVal) ? newVal : (newVal ? [newVal] : [])
+            const added   = newRefs.filter(r => r && !oldRefs.includes(r))
+            const removed = oldRefs.filter(r => r && !newRefs.includes(r))
+
+            // Helper: update a back-reference on a target card
+            const syncBackRef = (refId, add) => {
+              const refCard = next.find(c => c.id === refId)
+              if (!refCard) return
+              const refEffective = getEffectiveProps(refCard.typeId, customTypes)
+              refEffective.forEach(refProp => {
+                if (refProp.fieldType !== FIELD_TYPES.CARD_REF) return
+                if (!refProp.targetTypeIds?.some(tid => isDescendantOf(cardTypeId, tid, customTypes))) return
+                const curVal = refCard.props?.[refProp.id]
+                if (add) {
+                  // Add back-reference
+                  if (refProp.multiple) {
+                    const arr = Array.isArray(curVal) ? curVal : []
+                    if (!arr.includes(id)) {
+                      next = next.map(c => c.id === refId ? { ...c, props: { ...c.props, [refProp.id]: [...arr, id] }, updatedAt: Date.now() } : c)
+                    }
+                  } else {
+                    if (!curVal) {
+                      next = next.map(c => c.id === refId ? { ...c, props: { ...c.props, [refProp.id]: id }, updatedAt: Date.now() } : c)
+                    }
+                  }
+                } else {
+                  // Remove back-reference
+                  if (refProp.multiple) {
+                    const arr = Array.isArray(curVal) ? curVal : []
+                    if (arr.includes(id)) {
+                      next = next.map(c => c.id === refId ? { ...c, props: { ...c.props, [refProp.id]: arr.filter(v => v !== id) }, updatedAt: Date.now() } : c)
+                    }
+                  } else {
+                    if (curVal === id) {
+                      next = next.map(c => c.id === refId ? { ...c, props: { ...c.props, [refProp.id]: '' }, updatedAt: Date.now() } : c)
+                    }
+                  }
+                }
+              })
+            }
+
+            added.forEach(refId => syncBackRef(refId, true))
+            removed.forEach(refId => syncBackRef(refId, false))
+          })
+        }
+      }
+
+      save(dk('cards'), next)
+      return next
+    })
+  }, [resolvedWorldId, customTypes])
 
   const deleteCard = useCallback((id) => {
     setCardsState(prev => {
