@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Icon, Btn, ColorPicker, EmojiPicker } from '../components/ui.jsx'
-import { BUILTIN_TYPES, FIELD_TYPES, getEffectiveProps } from '../data/types.js'
+import { BUILTIN_TYPES, FIELD_TYPES } from '../data/types.js'
 import { uid } from '../store/useStore.js'
+import { WIDGET_TYPES, DEFAULT_CARD_LAYOUT, COLS, RESIZE_HANDLES, createWidget, resolveCollisions } from '../data/widgetDefaults.js'
 
 export default function CardTypesView({ customTypes, onUpdateType, onCreateCustomType, onDeleteType }) {
   const typeMap = new Map()
@@ -103,20 +104,157 @@ function TypeTreeItem({ type, typeMap, selected, onSelect, depth=0, filtered, cu
 }
 
 // ─── TypeEditor ───────────────────────────────────────────────
+const MINI_ROW = 28
+const MINI_GAP = 4
+
 function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
-  const [props,      setProps]      = useState(type.defaultProps||[])
   const [color,      setColor]      = useState(type.color||'#c8a064')
+  const [layoutWidgets, setLayoutWidgets] = useState(type.defaultLayout || null)
+  const [selectedWidgetId, setSelectedWidgetId] = useState(null)
+  const [showAddWidget, setShowAddWidget] = useState(false)
+
+  // Props state (for properties widget config)
+  const [props, setProps] = useState(type.defaultProps||[])
   const [addingProp, setAddingProp] = useState(false)
   const [dragPropId, setDragPropId] = useState(null)
-  const [dragOverInfo, setDragOverInfo] = useState(null) // { propId, position: 'above'|'below' }
+  const [dragOverInfo, setDragOverInfo] = useState(null)
 
+  // Grid drag/resize state
+  const [dragging, setDragging] = useState(null)
+  const [resizing, setResizing] = useState(null)
+  const [previewLayout, setPreviewLayout] = useState(null)
+  const gridRef = useRef()
+  const pushRef = useRef({ timer: null, pos: null })
+
+  const currentLayout = layoutWidgets || DEFAULT_CARD_LAYOUT
+  const displayLayout = previewLayout || currentLayout
+  const selectedWidget = selectedWidgetId ? displayLayout.find(w => w.id === selectedWidgetId) : null
+
+  const ensureCustomLayout = () => {
+    if (!layoutWidgets) {
+      const copy = DEFAULT_CARD_LAYOUT.map(w => ({ ...w }))
+      setLayoutWidgets(copy)
+      return copy
+    }
+    return layoutWidgets
+  }
+
+  const updateLayout = newLayout => {
+    setLayoutWidgets(newLayout)
+    onUpdate({ defaultLayout: newLayout })
+  }
+
+  // ── Grid drag/resize logic ──
+  const getGridCellSize = useCallback(() => {
+    if (!gridRef.current) return { cw: 12, ch: MINI_ROW }
+    const rect = gridRef.current.getBoundingClientRect()
+    const cw = (rect.width - MINI_GAP * (COLS - 1)) / COLS
+    return { cw, ch: MINI_ROW }
+  }, [])
+
+  const onGridDragStart = useCallback((e, widget) => {
+    e.preventDefault(); e.stopPropagation()
+    const layout = ensureCustomLayout()
+    setDragging({ id: widget.id, startX: e.clientX, startY: e.clientY, origX: widget.x, origY: widget.y })
+    setPreviewLayout(layout.map(w => ({ ...w })))
+  }, [layoutWidgets])
+
+  const onGridResizeStart = useCallback((e, widget, edges) => {
+    e.preventDefault(); e.stopPropagation()
+    const layout = ensureCustomLayout()
+    setResizing({ id: widget.id, startX: e.clientX, startY: e.clientY, origX: widget.x, origY: widget.y, origW: widget.w, origH: widget.h, edges })
+    setPreviewLayout(layout.map(w => ({ ...w })))
+  }, [layoutWidgets])
+
+  useEffect(() => {
+    if (!dragging && !resizing) return
+    const layout = layoutWidgets || DEFAULT_CARD_LAYOUT
+    const { cw, ch } = getGridCellSize()
+
+    const onMove = e => {
+      if (dragging) {
+        const dx = Math.round((e.clientX - dragging.startX) / (cw + MINI_GAP))
+        const dy = Math.round((e.clientY - dragging.startY) / (ch + MINI_GAP))
+        const w = layout.find(w => w.id === dragging.id)
+        if (!w) return
+        const newX = Math.max(0, Math.min(COLS - w.w, dragging.origX + dx))
+        const newY = Math.max(0, dragging.origY + dy)
+        const posKey = `d${newX},${newY}`
+        if (posKey === pushRef.current.pos) return
+        pushRef.current.pos = posKey
+        const moved = layout.map(lw => lw.id === dragging.id ? { ...lw, x: newX, y: newY } : { ...lw })
+        setPreviewLayout(moved)
+        clearTimeout(pushRef.current.timer)
+        pushRef.current.timer = setTimeout(() => {
+          setPreviewLayout(prev => prev ? resolveCollisions(prev, dragging.id) : prev)
+        }, 250)
+      }
+      if (resizing) {
+        const w = layout.find(w => w.id === resizing.id)
+        if (!w) return
+        const wt = WIDGET_TYPES.find(t => t.id === w.type)
+        const minW = wt?.minW || 4, minH = wt?.minH || 2
+        const dxC = Math.round((e.clientX - resizing.startX) / (cw + MINI_GAP))
+        const dyC = Math.round((e.clientY - resizing.startY) / (ch + MINI_GAP))
+        let nX = resizing.origX, nY = resizing.origY, nW = resizing.origW, nH = resizing.origH
+        if (resizing.edges.right) nW = resizing.origW + dxC
+        if (resizing.edges.left) { nX = resizing.origX + dxC; nW = resizing.origW - dxC }
+        if (resizing.edges.bottom) nH = resizing.origH + dyC
+        if (resizing.edges.top) { nY = resizing.origY + dyC; nH = resizing.origH - dyC }
+        if (nW < minW) { if (resizing.edges.left) nX = resizing.origX + resizing.origW - minW; nW = minW }
+        if (nH < minH) { if (resizing.edges.top) nY = resizing.origY + resizing.origH - minH; nH = minH }
+        if (nX < 0) { nW += nX; nX = 0 }
+        if (nY < 0) { nH += nY; nY = 0 }
+        if (nX + nW > COLS) nW = COLS - nX
+        if (nW < minW) nW = minW
+        const posKey = `r${nX},${nY},${nW},${nH}`
+        if (posKey === pushRef.current.pos) return
+        pushRef.current.pos = posKey
+        const moved = layout.map(lw => lw.id === resizing.id ? { ...lw, x: nX, y: nY, w: nW, h: nH } : { ...lw })
+        setPreviewLayout(moved)
+        clearTimeout(pushRef.current.timer)
+        pushRef.current.timer = setTimeout(() => {
+          setPreviewLayout(prev => prev ? resolveCollisions(prev, resizing.id) : prev)
+        }, 250)
+      }
+    }
+
+    const onUp = () => {
+      clearTimeout(pushRef.current.timer)
+      pushRef.current = { timer: null, pos: null }
+      if (previewLayout) {
+        const activeId = dragging?.id || resizing?.id
+        updateLayout(activeId ? resolveCollisions(previewLayout, activeId) : previewLayout)
+      }
+      setDragging(null); setResizing(null); setPreviewLayout(null)
+    }
+
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+  }, [dragging, resizing, previewLayout, layoutWidgets, getGridCellSize])
+
+  const removeWidget = id => {
+    const layout = ensureCustomLayout()
+    const updated = layout.filter(w => w.id !== id)
+    updateLayout(updated)
+    if (selectedWidgetId === id) setSelectedWidgetId(null)
+  }
+
+  const addWidget = typeId => {
+    const layout = ensureCustomLayout()
+    const w = createWidget(typeId, layout)
+    if (w) updateLayout([...layout, w])
+    setShowAddWidget(false)
+  }
+
+  // ── Prop editing (for properties widget config) ──
   const handlePropDragStart = (e, propId) => { setDragPropId(propId); e.dataTransfer.effectAllowed = 'move' }
   const handlePropDragOver = (e, propId) => {
     e.preventDefault()
     if (propId === dragPropId) { setDragOverInfo(null); return }
     const rect = e.currentTarget.getBoundingClientRect()
-    const position = e.clientY < rect.top + rect.height / 2 ? 'above' : 'below'
-    setDragOverInfo({ propId, position })
+    setDragOverInfo({ propId, position: e.clientY < rect.top + rect.height / 2 ? 'above' : 'below' })
   }
   const handlePropDrop = (e) => {
     e.preventDefault()
@@ -138,22 +276,26 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
     const updated = [...props, { ...prop, id:uid() }]
     setProps(updated); onUpdate({ defaultProps:updated }); setAddingProp(false)
   }
-  const removeProp = id => {
-    const updated = props.filter(p => p.id!==id)
-    setProps(updated); onUpdate({ defaultProps:updated })
+  const removeProp = id => { const updated = props.filter(p => p.id!==id); setProps(updated); onUpdate({ defaultProps:updated }) }
+  const renameProp = (id, name) => { const updated = props.map(p => p.id===id ? { ...p, name } : p); setProps(updated); onUpdate({ defaultProps:updated }) }
+
+  const updateWidgetConfig = configPatch => {
+    const layout = ensureCustomLayout()
+    const updated = layout.map(w => w.id === selectedWidgetId ? { ...w, config: { ...w.config, ...configPatch } } : w)
+    updateLayout(updated)
   }
-  const renameProp = (id, name) => {
-    const updated = props.map(p => p.id===id ? { ...p, name } : p)
-    setProps(updated); onUpdate({ defaultProps:updated })
-  }
+
+  const activeGridId = dragging?.id || resizing?.id
+  const maxRow = displayLayout.reduce((max, w) => Math.max(max, w.y + w.h), 0)
 
   return (
     <div className="anim-fadeup">
+      {/* Header */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:22, paddingBottom:14, borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <EmojiPicker value={type.icon} onChange={ic => onUpdate({ icon: ic })} style={{ flexShrink:0 }} />
           <h2 style={{ fontFamily:"var(--font)", fontSize:18, color:'var(--text-primary,#f0f0f0)', fontWeight:500, margin:0 }}>{type.name}</h2>
-          {isBuiltin && <span style={{ fontSize:10, color:'var(--text-dim,#5a5a5a)', background:'rgba(255,255,255,0.04)', padding:'2px 6px', borderRadius:4 }}>Intégré</span>}
+          {isBuiltin && <span style={{ fontSize:10, color:'var(--text-dim,#5a5a5a)', background:'rgba(255,255,255,0.04)', padding:'2px 6px', borderRadius:4 }}>Integre</span>}
         </div>
         {!BUILTIN_TYPES.some(t=>t.id===type.id) && (
           <button onClick={onDelete} style={{ background:'none', border:'none', color:'var(--text-darker,#2e2e2e)', cursor:'pointer', fontSize:12 }}
@@ -163,28 +305,277 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
         )}
       </div>
 
-      {/* Propriétés */}
+      {/* Layout par défaut — Grid editor */}
       <section style={{ marginBottom:26 }}>
-        <h3 style={{ fontFamily:"var(--font)", fontSize:15, color:'var(--text-secondary,#c0c0c0)', marginBottom:12, fontWeight:500 }}>Propriétés par défaut</h3>
-        {props.length===0 && !addingProp && <p style={{ color:'var(--text-darker,#2e2e2e)', fontSize:12, marginBottom:10 }}>Aucune propriété</p>}
-        <div style={{ display:'flex', flexDirection:'column', gap:4, marginBottom:8 }}>
-          {props.map(p => <PropRow key={p.id} prop={p} allTypes={allTypes} onRename={n=>renameProp(p.id,n)} onRemove={()=>removeProp(p.id)}
-            onEditProp={patch => { const updated = props.map(x => x.id===p.id ? { ...x, ...patch } : x); setProps(updated); onUpdate({ defaultProps:updated }) }}
-            draggable onDragStart={e => handlePropDragStart(e, p.id)} onDragOver={e => handlePropDragOver(e, p.id)}
-            onDrop={handlePropDrop} onDragEnd={handlePropDragEnd}
-            isDragging={dragPropId === p.id}
-            insertBefore={dragOverInfo?.propId === p.id && dragOverInfo?.position === 'above' && dragPropId !== p.id}
-            insertAfter={dragOverInfo?.propId === p.id && dragOverInfo?.position === 'below' && dragPropId !== p.id} />)}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+          <h3 style={{ fontFamily:"var(--font)", fontSize:15, color:'var(--text-secondary,#c0c0c0)', fontWeight:500, margin:0 }}>Layout par defaut</h3>
+          {layoutWidgets && (
+            <button onClick={() => { setLayoutWidgets(null); onUpdate({ defaultLayout: null }); setSelectedWidgetId(null) }}
+              style={{ background:'none', border:'none', color:'var(--text-darker,#2e2e2e)', cursor:'pointer', fontSize:11, display:'flex', alignItems:'center', gap:4 }}
+              onMouseEnter={e => e.currentTarget.style.color='var(--accent,#c8a064)'}
+              onMouseLeave={e => e.currentTarget.style.color='var(--text-darker,#2e2e2e)'}>
+              <Icon name="refresh" size={10} /> Reinitialiser
+            </button>
+          )}
         </div>
-        {addingProp
-          ? <DropdownPropPicker allTypes={allTypes} onAdd={addProp} onCancel={() => setAddingProp(false)} />
-          : <button onClick={() => setAddingProp(true)} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 11px', width:'100%', background:'rgba(255,255,255,0.02)', border:'1px dashed rgba(255,255,255,0.07)', borderRadius:7, color:'var(--text-dark,#444444)', fontSize:12, cursor:'pointer', transition:'all 0.1s' }}
+
+        {/* Mini grid */}
+        <div ref={gridRef} onClick={() => setSelectedWidgetId(null)} style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+          gridAutoRows: MINI_ROW,
+          gap: MINI_GAP,
+          position: 'relative',
+          minHeight: Math.max(4, maxRow) * (MINI_ROW + MINI_GAP),
+          background: 'rgba(255,255,255,0.02)',
+          borderRadius: 12,
+          border: '1px solid rgba(255,255,255,0.06)',
+          padding: 6,
+        }}>
+          {displayLayout.map(widget => {
+            const wt = WIDGET_TYPES.find(t => t.id === widget.type)
+            const isSelected = selectedWidgetId === widget.id
+            const isActive = activeGridId === widget.id
+
+            return (
+              <div key={widget.id}
+                onClick={e => { e.stopPropagation(); setSelectedWidgetId(isSelected ? null : widget.id) }}
+                style={{
+                  gridColumn: `${widget.x + 1} / span ${widget.w}`,
+                  gridRow: `${widget.y + 1} / span ${widget.h}`,
+                  background: isSelected ? 'var(--accent-12,rgba(200,160,100,0.12))' : 'rgba(255,255,255,0.04)',
+                  border: isSelected ? '2px solid var(--accent-30,rgba(200,160,100,0.3))' : '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 8,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                  fontSize: 11, color: isSelected ? 'var(--accent,#c8a064)' : 'var(--text-muted,#8a8a8a)',
+                  cursor: 'pointer', position: 'relative',
+                  overflow: 'visible',
+                  opacity: isActive ? 0.7 : 1,
+                  transition: previewLayout ? (isActive ? 'none' : 'all 0.15s ease') : 'opacity 0.15s, background 0.1s',
+                  userSelect: 'none',
+                }}>
+                <span style={{ pointerEvents: 'none' }}>{wt?.icon}</span>
+                <span style={{ pointerEvents: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wt?.name}</span>
+
+                {isSelected && (
+                  <>
+                    {/* Drag surface */}
+                    <div onMouseDown={e => onGridDragStart(e, widget)}
+                      onClick={e => e.stopPropagation()}
+                      style={{ position: 'absolute', inset: 6, cursor: 'grab', zIndex: 10 }} />
+                    {/* 8 resize handles */}
+                    {RESIZE_HANDLES.map(h => (
+                      <div key={h.id} onMouseDown={e => onGridResizeStart(e, widget, h.edges)}
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                          position: 'absolute', ...h.style,
+                          width: 6, height: 6, borderRadius: 3,
+                          background: 'var(--accent,#c8a064)', border: '1px solid rgba(0,0,0,0.3)',
+                          cursor: h.cursor, zIndex: 11,
+                        }} />
+                    ))}
+                    {/* Delete button */}
+                    <button onClick={e => { e.stopPropagation(); removeWidget(widget.id) }}
+                      style={{ position: 'absolute', top: -7, right: -7, zIndex: 12, width: 14, height: 14, borderRadius: 7, background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.15)', color: '#888', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, padding: 0 }}
+                      onMouseEnter={e => e.currentTarget.style.color = 'var(--danger,#ef4444)'}
+                      onMouseLeave={e => e.currentTarget.style.color = '#888'}>
+                      ✕
+                    </button>
+                  </>
+                )}
+              </div>
+            )
+          })}
+
+          {/* No ghost needed — pushed widgets animate to new positions */}
+        </div>
+
+        {/* Add widget */}
+        <div style={{ marginTop: 8, position: 'relative' }}>
+          {showAddWidget ? (
+            <LayoutAddWidgetMenu
+              onAdd={addWidget}
+              onClose={() => setShowAddWidget(false)}
+            />
+          ) : (
+            <button onClick={() => setShowAddWidget(true)}
+              style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 11px', width:'100%', background:'rgba(255,255,255,0.02)', border:'1px dashed rgba(255,255,255,0.07)', borderRadius:7, color:'var(--text-dark,#444444)', fontSize:11, cursor:'pointer', transition:'all 0.1s' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor='var(--accent-22)'; e.currentTarget.style.color='var(--accent,#c8a064)' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(255,255,255,0.07)'; e.currentTarget.style.color='var(--text-dark,#444444)' }}>
-              <Icon name="plus" size={12} /> Ajouter une propriété
+              <Icon name="plus" size={11} /> Ajouter un widget
             </button>
-        }
+          )}
+        </div>
       </section>
+
+      {/* Selected widget config */}
+      {selectedWidget && (
+        <section style={{ marginBottom:26, padding:'14px 16px', background:'rgba(255,255,255,0.02)', borderRadius:12, border:'1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:12 }}>
+            <span style={{ fontSize:14 }}>{WIDGET_TYPES.find(t => t.id === selectedWidget.type)?.icon}</span>
+            <h3 style={{ fontFamily:"var(--font)", fontSize:14, color:'var(--accent,#c8a064)', fontWeight:500, margin:0 }}>
+              {WIDGET_TYPES.find(t => t.id === selectedWidget.type)?.name} — Configuration
+            </h3>
+          </div>
+
+          {selectedWidget.type === 'properties' && (() => {
+            const claimedByOther = new Set()
+            displayLayout.forEach(w => {
+              if (w.type === 'properties' && w.id !== selectedWidget.id && Array.isArray(w.config?.propIds)) {
+                w.config.propIds.forEach(id => claimedByOther.add(id))
+              }
+            })
+            return <>
+              {/* Prop filter for this widget */}
+              <div style={{ marginBottom: 14, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-dim,#5a5a5a)', marginBottom: 8 }}>Propriétés affichées</div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, cursor: 'pointer', fontSize: 12, color: 'var(--text-muted,#8a8a8a)' }}>
+                  <input type="radio" name={`propFilter_${selectedWidget.id}`}
+                    checked={!selectedWidget.config?.propIds || selectedWidget.config.propIds === 'all'}
+                    onChange={() => updateWidgetConfig({ propIds: 'all' })}
+                    style={{ accentColor: 'var(--accent,#c8a064)' }} />
+                  Toutes (hors sélectionnées ailleurs)
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: 'var(--text-muted,#8a8a8a)' }}>
+                  <input type="radio" name={`propFilter_${selectedWidget.id}`}
+                    checked={Array.isArray(selectedWidget.config?.propIds)}
+                    onChange={() => updateWidgetConfig({ propIds: [] })}
+                    style={{ accentColor: 'var(--accent,#c8a064)' }} />
+                  Sélection
+                </label>
+                {Array.isArray(selectedWidget.config?.propIds) && (
+                  <div style={{ marginTop: 6, marginLeft: 20 }}>
+                    <div style={{ display: 'flex', gap: 10, marginBottom: 4 }}>
+                      <span style={{ fontSize: 11, color: 'var(--accent,#c8a064)', cursor: 'pointer' }}
+                        onClick={() => updateWidgetConfig({ propIds: props.filter(p => !claimedByOther.has(p.id)).map(p => p.id) })}>
+                        Tout sélectionner
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--accent,#c8a064)', cursor: 'pointer' }}
+                        onClick={() => updateWidgetConfig({ propIds: [] })}>
+                        Tout désélectionner
+                      </span>
+                    </div>
+                    {props.map(p => {
+                      const claimed = claimedByOther.has(p.id)
+                      return (
+                        <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 0', cursor: claimed ? 'default' : 'pointer', fontSize: 12, color: claimed ? 'var(--text-darker,#2e2e2e)' : 'var(--text-muted,#8a8a8a)', opacity: claimed ? 0.5 : 1 }}>
+                          <input type="checkbox"
+                            disabled={claimed}
+                            checked={(selectedWidget.config?.propIds || []).includes(p.id)}
+                            onChange={e => {
+                              const current = selectedWidget.config?.propIds || []
+                              const updated = e.target.checked ? [...current, p.id] : current.filter(id => id !== p.id)
+                              updateWidgetConfig({ propIds: updated })
+                            }}
+                            style={{ accentColor: 'var(--accent,#c8a064)' }} />
+                          <span style={{ fontSize: 10 }}>{p.emoji || 'T'}</span>
+                          {p.name}{claimed ? ' (autre widget)' : ''}
+                        </label>
+                      )
+                    })}
+                    {props.length === 0 && <span style={{ fontSize: 11, color: 'var(--text-darker,#2e2e2e)' }}>Aucune propriété définie</span>}
+                  </div>
+                )}
+              </div>
+
+              {/* Type default props management */}
+              <div style={{ fontSize: 11, color: 'var(--text-dim,#5a5a5a)', marginBottom: 8 }}>Propriétés du type</div>
+              {props.length===0 && !addingProp && <p style={{ color:'var(--text-darker,#2e2e2e)', fontSize:12, marginBottom:10 }}>Aucune propriete</p>}
+              <div style={{ display:'flex', flexDirection:'column', gap:4, marginBottom:8 }}>
+                {props.map(p => <PropRow key={p.id} prop={p} allTypes={allTypes} onRename={n=>renameProp(p.id,n)} onRemove={()=>removeProp(p.id)}
+                  onEditProp={patch => { const updated = props.map(x => x.id===p.id ? { ...x, ...patch } : x); setProps(updated); onUpdate({ defaultProps:updated }) }}
+                  draggable onDragStart={e => handlePropDragStart(e, p.id)} onDragOver={e => handlePropDragOver(e, p.id)}
+                  onDrop={handlePropDrop} onDragEnd={handlePropDragEnd}
+                  isDragging={dragPropId === p.id}
+                  insertBefore={dragOverInfo?.propId === p.id && dragOverInfo?.position === 'above' && dragPropId !== p.id}
+                  insertAfter={dragOverInfo?.propId === p.id && dragOverInfo?.position === 'below' && dragPropId !== p.id} />)}
+              </div>
+              {addingProp
+                ? <DropdownPropPicker allTypes={allTypes} onAdd={addProp} onCancel={() => setAddingProp(false)} />
+                : <button onClick={() => setAddingProp(true)} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 11px', width:'100%', background:'rgba(255,255,255,0.02)', border:'1px dashed rgba(255,255,255,0.07)', borderRadius:7, color:'var(--text-dark,#444444)', fontSize:12, cursor:'pointer', transition:'all 0.1s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor='var(--accent-22)'; e.currentTarget.style.color='var(--accent,#c8a064)' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(255,255,255,0.07)'; e.currentTarget.style.color='var(--text-dark,#444444)' }}>
+                    <Icon name="plus" size={12} /> Ajouter une propriete
+                  </button>
+              }
+            </>
+          })()}
+
+          {selectedWidget.type === 'text' && (
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-dim,#5a5a5a)', marginBottom: 6 }}>Titre</div>
+              <input value={selectedWidget.config?.title || ''}
+                onChange={e => updateWidgetConfig({ title: e.target.value })}
+                placeholder="Texte"
+                style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 8px', color: 'var(--text-primary,#f0f0f0)', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+          )}
+
+          {selectedWidget.type === 'image' && (
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ fontSize:12, color:'var(--text-dim,#5a5a5a)' }}>Ajustement :</span>
+              {['cover', 'contain'].map(fit => (
+                <button key={fit} onClick={() => updateWidgetConfig({ fit })}
+                  style={{
+                    padding:'4px 10px', borderRadius:5, fontSize:11, cursor:'pointer', border:'1px solid',
+                    background: selectedWidget.config?.fit === fit ? 'var(--accent-12)' : 'rgba(255,255,255,0.03)',
+                    borderColor: selectedWidget.config?.fit === fit ? 'var(--accent-30)' : 'rgba(255,255,255,0.08)',
+                    color: selectedWidget.config?.fit === fit ? 'var(--accent,#c8a064)' : 'var(--text-muted,#8a8a8a)',
+                  }}>
+                  {fit === 'cover' ? 'Remplir' : 'Contenir'}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {selectedWidget.type === 'chart' && (() => {
+            const numericProps = props.filter(p => p.fieldType === 'number')
+            return (
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-dim,#5a5a5a)', marginBottom: 8 }}>Propriétés affichées</div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, cursor: 'pointer', fontSize: 12, color: 'var(--text-muted,#8a8a8a)' }}>
+                <input type="radio" name={`chartFilter_${selectedWidget.id}`}
+                  checked={!selectedWidget.config?.propIds || selectedWidget.config.propIds === 'all'}
+                  onChange={() => updateWidgetConfig({ propIds: 'all' })}
+                  style={{ accentColor: 'var(--accent,#c8a064)' }} />
+                Toutes les stats numériques
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: 'var(--text-muted,#8a8a8a)' }}>
+                <input type="radio" name={`chartFilter_${selectedWidget.id}`}
+                  checked={Array.isArray(selectedWidget.config?.propIds)}
+                  onChange={() => updateWidgetConfig({ propIds: [] })}
+                  style={{ accentColor: 'var(--accent,#c8a064)' }} />
+                Sélection
+              </label>
+              {Array.isArray(selectedWidget.config?.propIds) && (
+                <div style={{ marginTop: 6, marginLeft: 20 }}>
+                  {numericProps.map(p => (
+                    <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 0', cursor: 'pointer', fontSize: 12, color: 'var(--text-muted,#8a8a8a)' }}>
+                      <input type="checkbox"
+                        checked={(selectedWidget.config?.propIds || []).includes(p.id)}
+                        onChange={e => {
+                          const current = selectedWidget.config?.propIds || []
+                          const updated = e.target.checked ? [...current, p.id] : current.filter(id => id !== p.id)
+                          updateWidgetConfig({ propIds: updated })
+                        }}
+                        style={{ accentColor: 'var(--accent,#c8a064)' }} />
+                      <span style={{ fontSize: 10 }}>#</span>
+                      {p.name}
+                    </label>
+                  ))}
+                  {numericProps.length === 0 && <span style={{ fontSize: 11, color: 'var(--text-darker,#2e2e2e)' }}>Aucune propriété numérique</span>}
+                </div>
+              )}
+            </div>
+            )
+          })()}
+
+          {!['properties', 'image', 'text', 'chart'].includes(selectedWidget.type) && (
+            <p style={{ color:'var(--text-darker,#2e2e2e)', fontSize:11 }}>Aucune option pour ce widget</p>
+          )}
+        </section>
+      )}
 
       {/* Couleur */}
       <section>
@@ -485,6 +876,35 @@ export function DropdownPropPicker({ allTypes, onAdd, onCancel }) {
       <div style={{ padding:'5px 12px', borderTop:'1px solid rgba(255,255,255,0.04)' }}>
         <button onClick={onCancel} style={{ background:'none', border:'none', color:'var(--text-dark,#444444)', cursor:'pointer', fontSize:11 }}>Annuler</button>
       </div>
+    </div>
+  )
+}
+
+// ─── LayoutAddWidgetMenu ──────────────────────────────────────
+function LayoutAddWidgetMenu({ onAdd, onClose }) {
+  const ref = useRef()
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) onClose() }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [onClose])
+
+  return (
+    <div ref={ref} style={{
+      background: 'var(--bg-panel-92,rgba(10,6,1,0.92))', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
+      border: '1px solid var(--border-14)', borderRadius: 10,
+      overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.8)',
+    }}>
+      {WIDGET_TYPES.map(wt => (
+        <div key={wt.id} onClick={() => onAdd(wt.id)}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', cursor: 'pointer', fontSize: 12, color: 'var(--text-muted,#8a8a8a)', transition: 'background 0.08s' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+          <span style={{ width: 20, textAlign: 'center', fontSize: 14 }}>{wt.icon}</span>
+          <span style={{ flex: 1 }}>{wt.name}</span>
+          <span style={{ fontSize: 10, color: 'var(--text-darker,#2e2e2e)' }}>{wt.defaultW}×{wt.defaultH}</span>
+        </div>
+      ))}
     </div>
   )
 }

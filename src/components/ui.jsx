@@ -42,6 +42,7 @@ const PATHS = {
   connect: 'M18 8a3 3 0 100-6 3 3 0 000 6z M6 21a3 3 0 100-6 3 3 0 000 6z M15.35 6.35L8.65 16.65',
   filter: 'M22 3H2l8 9.46V19l4 2v-8.54L22 3z',
   sort: 'M3 6h18 M6 12h12 M9 18h6',
+  fullscreen: 'M3 8V3h5 M16 3h5v5 M21 16v5h-5 M8 21H3v-5',
 }
 
 export function Icon({ name, size = 16, style, className, onClick }) {

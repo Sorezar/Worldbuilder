@@ -128,9 +128,9 @@ export function getCreatableTypes(customTypes = []) {
   return [...BUILTIN_TYPES.filter(t => !t.virtual), ...customTypes]
 }
 
-// Get type by id (builtin or custom)
+// Get type by id (custom shadow overrides take priority over builtins)
 export function getType(typeId, customTypes = []) {
-  return BUILTIN_TYPE_MAP[typeId] || customTypes.find(t => t.id === typeId) || null
+  return customTypes.find(t => t.id === typeId) || BUILTIN_TYPE_MAP[typeId] || null
 }
 
 // Get all ancestors of a type
