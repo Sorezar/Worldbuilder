@@ -1,25 +1,26 @@
 import { uid } from '../store/useStore.js'
 
 // ─── Grid constants ─────────────────────────────────────────
-export const COLS = 32
-export const ROW_H = 48
+export const COLS = 64
+export const ROW_H_FALLBACK = 24 // fallback only — actual row height is computed as column width
 export const GAP = 6
 
 // ─── Widget type catalog ────────────────────────────────────
 export const WIDGET_TYPES = [
-  { id: 'properties', name: 'Propriétés',       icon: '☰',  minW: 10, minH: 2, defaultW: 16, defaultH: 5 },
-  { id: 'text',       name: 'Texte',            icon: 'T',  minW: 8,  minH: 2, defaultW: 32, defaultH: 4 },
-  { id: 'image',      name: 'Image',            icon: '🖼', minW: 4,  minH: 2, defaultW: 10, defaultH: 3 },
-  { id: 'chart',      name: 'Graphique',        icon: '📊', minW: 10, minH: 3, defaultW: 16, defaultH: 4 },
-  { id: 'map',        name: 'Carte géo',        icon: '🗺', minW: 8,  minH: 3, defaultW: 16, defaultH: 4 },
-  { id: 'family_tree', name: 'Arbre généalogique', icon: '🌳', minW: 10, minH: 3, defaultW: 16, defaultH: 4 },
+  { id: 'properties', name: 'Propriétés',       icon: '☰',  minW: 20, minH: 4,  defaultW: 32, defaultH: 10 },
+  { id: 'text',       name: 'Texte',            icon: 'T',  minW: 16, minH: 4,  defaultW: 64, defaultH: 8  },
+  { id: 'image',      name: 'Image',            icon: '🖼', minW: 8,  minH: 4,  defaultW: 20, defaultH: 6  },
+  { id: 'chart',      name: 'Graphique',        icon: '📊', minW: 20, minH: 6,  defaultW: 32, defaultH: 8  },
+  { id: 'map',        name: 'Carte géo',        icon: '🗺', minW: 16, minH: 6,  defaultW: 32, defaultH: 8  },
+  { id: 'family_tree', name: 'Arbre généalogique', icon: '🌳', minW: 20, minH: 6, defaultW: 32, defaultH: 8 },
+  { id: 'graph', name: 'Graphe relations', icon: '🔗', minW: 16, minH: 6, defaultW: 32, defaultH: 10 },
 ]
 
 // ─── Default layout reproducing current CardWindow ──────────
 export const DEFAULT_CARD_LAYOUT = [
-  { id: '_img',   type: 'image',      x: 22, y: 0, w: 10, h: 3, config: { fit: 'cover' } },
-  { id: '_props', type: 'properties', x: 0,  y: 0, w: 22, h: 5, config: { propIds: 'all' } },
-  { id: '_text',  type: 'text',       x: 0,  y: 5, w: 32, h: 4, config: {} },
+  { id: '_img',   type: 'image',      x: 44, y: 0,  w: 20, h: 6,  config: { fit: 'cover' } },
+  { id: '_props', type: 'properties', x: 0,  y: 0,  w: 44, h: 10, config: { propIds: 'all' } },
+  { id: '_text',  type: 'text',       x: 0,  y: 10, w: 64, h: 8,  config: {} },
 ]
 
 // ─── Resolve layout for a given card + type ─────────────────

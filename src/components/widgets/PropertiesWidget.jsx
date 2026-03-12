@@ -94,7 +94,7 @@ export default function PropertiesWidget({ widget, card, cards, customTypes, all
   const updatePropEmoji = (propId, emoji) => upd({ propEmojiOverrides: { ...emojiOverrides, [propId]: emoji } })
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.07)' }}>
         {visibleProps.map(prop => {
           const isExtra = prop._source === 'extra'
@@ -123,22 +123,23 @@ export default function PropertiesWidget({ widget, card, cards, customTypes, all
         {visibleProps.length === 0 && !addingExtraProp && (
           <div style={{ padding: '10px 12px', color: 'var(--text-darker,#2e2e2e)', fontSize: 11 }}>Aucune propriete</div>
         )}
-      </div>
-      {propIds === 'all' && (
-        addingExtraProp ? (
-          <div style={{ marginTop: 4 }}>
-            <DropdownPropPicker allTypes={allTypes}
-              onAdd={p => { upd({ extraProps: [...(card.extraProps || []), { ...p, id: uid(), value: p.multiple ? [] : '' }] }); setAddingExtraProp(false) }}
-              onCancel={() => setAddingExtraProp(false)} />
+        {propIds === 'all' && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 10px', borderTop: visibleProps.length > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+            <button onClick={() => setAddingExtraProp(true)}
+              style={{ background: 'none', border: 'none', color: 'var(--text-darker,#2e2e2e)', cursor: 'pointer', fontSize: 11, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', transition: 'color 0.1s' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--accent,#c8a064)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-darker,#2e2e2e)'}>
+              <Icon name="plus" size={10} />
+            </button>
           </div>
-        ) : (
-          <button onClick={() => setAddingExtraProp(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 0', background: 'none', border: 'none', color: 'var(--text-dim,#5a5a5a)', fontSize: 11, cursor: 'pointer', marginTop: 4 }}
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--accent,#c8a064)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim,#5a5a5a)'}>
-            <Icon name="plus" size={10} /> Ajouter
-          </button>
-        )
+        )}
+      </div>
+      {propIds === 'all' && addingExtraProp && (
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 100 }}>
+          <DropdownPropPicker allTypes={allTypes}
+            onAdd={p => { upd({ extraProps: [...(card.extraProps || []), { ...p, id: uid(), value: p.multiple ? [] : '' }] }); setAddingExtraProp(false) }}
+            onCancel={() => setAddingExtraProp(false)} />
+        </div>
       )}
     </div>
   )

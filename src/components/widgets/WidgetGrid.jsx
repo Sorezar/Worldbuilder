@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Icon } from '../ui.jsx'
-import { WIDGET_TYPES, COLS, ROW_H, GAP, createWidget, resolveCollisions, RESIZE_HANDLES, DOT_SIZE } from '../../data/widgetDefaults.js'
+import { WIDGET_TYPES, COLS, ROW_H_FALLBACK, GAP, createWidget, resolveCollisions, RESIZE_HANDLES, DOT_SIZE } from '../../data/widgetDefaults.js'
 import PropertiesWidget from './PropertiesWidget.jsx'
 import TextWidget from './TextWidget.jsx'
 import ImageWidget from './ImageWidget.jsx'
 import ChartWidget from './ChartWidget.jsx'
 import MapWidget from './MapWidget.jsx'
 import FamilyTreeWidget from './FamilyTreeWidget.jsx'
+import GraphWidget from './GraphWidget.jsx'
 
 // ─── WidgetGrid ─────────────────────────────────────────────
 export default function WidgetGrid({
@@ -19,14 +20,28 @@ export default function WidgetGrid({
   const [resizing, setResizing] = useState(null)
   const [previewLayout, setPreviewLayout] = useState(null) // full pushed layout
   const [showAddMenu, setShowAddMenu] = useState(false)
+  const [rowH, setRowH] = useState(ROW_H_FALLBACK)
   const pushRef = useRef({ timer: null, pos: null })
 
+  // Compute row height = column width (square cells)
+  useEffect(() => {
+    if (!gridRef.current) return
+    const ro = new ResizeObserver(entries => {
+      for (const e of entries) {
+        const cw = (e.contentRect.width - GAP * (COLS - 1)) / COLS
+        if (cw > 0) setRowH(cw)
+      }
+    })
+    ro.observe(gridRef.current)
+    return () => ro.disconnect()
+  }, [])
+
   const getCellSize = useCallback(() => {
-    if (!gridRef.current) return { cw: 20, ch: ROW_H }
+    if (!gridRef.current) return { cw: rowH, ch: rowH }
     const rect = gridRef.current.getBoundingClientRect()
     const cw = (rect.width - GAP * (COLS - 1)) / COLS
-    return { cw, ch: ROW_H }
-  }, [])
+    return { cw, ch: cw } // square cells
+  }, [rowH])
 
   const onDragStart = useCallback((e, widget) => {
     if (!editMode) return
@@ -144,10 +159,10 @@ export default function WidgetGrid({
       <div ref={gridRef} style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-        gridAutoRows: ROW_H,
+        gridAutoRows: rowH,
         gap: GAP,
         position: 'relative',
-        minHeight: maxRow * (ROW_H + GAP),
+        minHeight: maxRow * (rowH + GAP),
       }}>
         {displayLayout.map(widget => {
           const isActive = activeId === widget.id
@@ -160,10 +175,11 @@ export default function WidgetGrid({
               gridColumn: `${widget.x + 1} / span ${widget.w}`,
               gridRow: `${widget.y + 1} / span ${widget.h}`,
               position: 'relative',
+              boxSizing: 'border-box',
               borderRadius: 12,
               border: editMode
                 ? isActive ? '2px solid var(--accent,#c8a064)' : '2px solid var(--accent-30,rgba(200,160,100,0.3))'
-                : '1px solid transparent',
+                : 'none',
               background: editMode ? 'rgba(255,255,255,0.02)' : 'transparent',
               overflow: editMode ? 'visible' : 'hidden',
               opacity: isActive ? 0.8 : 1,
@@ -246,6 +262,8 @@ function WidgetRenderer({ widget, card, cards, customTypes, allTypes, calendars,
       return <MapWidget card={card} cards={cards} />
     case 'family_tree':
       return <FamilyTreeWidget card={card} cards={cards} />
+    case 'graph':
+      return <GraphWidget card={card} cards={cards} customTypes={customTypes} onOpenCard={onOpenCard} />
     default:
       return <div style={{ padding: 12, color: 'var(--text-darker,#2e2e2e)', fontSize: 11 }}>Widget inconnu: {widget.type}</div>
   }

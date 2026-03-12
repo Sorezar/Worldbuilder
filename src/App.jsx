@@ -16,7 +16,7 @@ import FamilyTreeView from './views/FamilyTreeView.jsx'
 import GeoMapView from './views/GeoMapView.jsx'
 import { Icon } from './components/ui.jsx'
 
-const MAX_OPEN = 4
+const MAX_OPEN = 3
 
 const NAV = [
   { id:'home',       icon:'home',     label:'Accueil'      },
@@ -151,7 +151,7 @@ export default function App() {
               <CharactersView cards={cards} customTypes={customTypes} onOpenCard={openCard} onCreateCard={handleCreate} />
             </div>
             <div style={{ flex:1, display: activeView==='graph' ? 'flex' : 'none', overflow:'hidden', minWidth:0 }}>
-              <GraphView cards={cards} customTypes={customTypes} onOpenCard={openCard} />
+              <GraphView cards={cards} customTypes={customTypes} onOpenCard={openCard} worldId={activeWorldId} />
             </div>
             <div style={{ flex:1, display: activeView==='timeline' ? 'flex' : 'none', overflow:'hidden', minWidth:0 }}>
               <TimelineView cards={cards} customTypes={customTypes} calendars={calendars} onOpenCard={openCard} />

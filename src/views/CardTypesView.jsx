@@ -104,8 +104,8 @@ function TypeTreeItem({ type, typeMap, selected, onSelect, depth=0, filtered, cu
 }
 
 // ─── TypeEditor ───────────────────────────────────────────────
-const MINI_ROW = 28
 const MINI_GAP = 4
+const MINI_ROW_FALLBACK = 8 // fallback — actual row height computed as column width (square cells)
 
 function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
   const [color,      setColor]      = useState(type.color||'#c8a064')
@@ -125,6 +125,20 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
   const [previewLayout, setPreviewLayout] = useState(null)
   const gridRef = useRef()
   const pushRef = useRef({ timer: null, pos: null })
+  const [miniRowH, setMiniRowH] = useState(MINI_ROW_FALLBACK)
+
+  // Compute square cell height from grid width
+  useEffect(() => {
+    if (!gridRef.current) return
+    const ro = new ResizeObserver(entries => {
+      for (const e of entries) {
+        const cw = Math.floor((e.contentRect.width - MINI_GAP * (COLS - 1)) / COLS)
+        if (cw > 0) setMiniRowH(cw)
+      }
+    })
+    ro.observe(gridRef.current)
+    return () => ro.disconnect()
+  }, [])
 
   const currentLayout = layoutWidgets || DEFAULT_CARD_LAYOUT
   const displayLayout = previewLayout || currentLayout
@@ -146,11 +160,11 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
 
   // ── Grid drag/resize logic ──
   const getGridCellSize = useCallback(() => {
-    if (!gridRef.current) return { cw: 12, ch: MINI_ROW }
+    if (!gridRef.current) return { cw: miniRowH, ch: miniRowH }
     const rect = gridRef.current.getBoundingClientRect()
     const cw = (rect.width - MINI_GAP * (COLS - 1)) / COLS
-    return { cw, ch: MINI_ROW }
-  }, [])
+    return { cw, ch: cw } // square cells
+  }, [miniRowH])
 
   const onGridDragStart = useCallback((e, widget) => {
     e.preventDefault(); e.stopPropagation()
@@ -323,10 +337,10 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
         <div ref={gridRef} onClick={() => setSelectedWidgetId(null)} style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-          gridAutoRows: MINI_ROW,
+          gridAutoRows: miniRowH,
           gap: MINI_GAP,
           position: 'relative',
-          minHeight: Math.max(4, maxRow) * (MINI_ROW + MINI_GAP),
+          minHeight: Math.max(4, maxRow) * (miniRowH + MINI_GAP),
           background: 'rgba(255,255,255,0.02)',
           borderRadius: 12,
           border: '1px solid rgba(255,255,255,0.06)',

@@ -136,9 +136,20 @@ export default function ChartsView({ cards, customTypes }) {
     setEditingName(currentName)
   }
 
+  // Stats available for selected cards in a chart
+  const getChartStatKeys = (chart) => {
+    if (chart.cardIds.length === 0) return allStatKeys
+    const keys = new Set()
+    cards.filter(c => chart.cardIds.includes(c.id)).forEach(c =>
+      Object.keys(getNumericProps(c, getEffectiveProps(c.typeId, customTypes))).forEach(k => keys.add(k))
+    )
+    return [...keys]
+  }
+
   const buildChartData = (chart) => {
+    const chartKeys = getChartStatKeys(chart)
     const targets = cards.filter(c => chart.cardIds.includes(c.id))
-    const stats = chart.stats.length > 0 ? chart.stats : allStatKeys
+    const stats = chart.stats.length > 0 ? chart.stats.filter(s => chartKeys.includes(s)) : chartKeys
     return targets
       .filter(card => { const np = getNumericProps(card, getEffectiveProps(card.typeId, customTypes)); return stats.some(k => np[k] !== undefined && !isNaN(np[k])) })
       .map((card, i) => ({
@@ -151,7 +162,9 @@ export default function ChartsView({ cards, customTypes }) {
   // ─── Drag / Resize ──────────────────────────────
   const displayCharts = previewLayout || page.charts
   const activeId = dragging?.id || resizing?.id
-  const maxRow = Math.max(6, displayCharts.reduce((max, c) => Math.max(max, c.y + c.h), 0))
+  const chartsMaxRow = displayCharts.reduce((max, c) => Math.max(max, c.y + c.h), 0)
+  const addRect = page.charts.length < MAX_CHARTS ? findLargestFreeRect(displayCharts, Math.max(6, chartsMaxRow)) : null
+  const maxRow = Math.max(6, chartsMaxRow, addRect ? addRect.y + addRect.h : 0)
 
   const getCellSize = useCallback(() => {
     if (!gridRef.current) return { cw: 60, ch: ROW_H }
@@ -312,60 +325,48 @@ export default function ChartsView({ cards, customTypes }) {
         {zoomed ? (
           <ZoomedChartPanel
             chart={zoomed} chartData={buildChartData(zoomed)}
-            allStatKeys={allStatKeys} statLabel={statLabel}
+            allStatKeys={getChartStatKeys(zoomed)} statLabel={statLabel}
             onUpdate={patch => updateChart(zoomed.id, patch)}
             onClose={() => setZoomedChart(null)}
             cardsWithStats={cardsWithStats} allTypes={allTypes} customTypes={customTypes}
           />
         ) : (
-          <>
-            <div ref={gridRef} style={{
-              flex:1,
-              display:'grid',
-              gridTemplateColumns:`repeat(${COLS}, 1fr)`,
-              gridTemplateRows:`repeat(${maxRow}, 1fr)`,
-              gap:GAP,
-              overflow:'hidden',
-            }}>
-              {displayCharts.map(chart => {
-                const isActive = activeId === chart.id
-                return (
-                  <ChartCell
-                    key={chart.id}
-                    chart={chart}
-                    chartData={buildChartData(chart)}
-                    allStatKeys={allStatKeys}
-                    statLabel={statLabel}
-                    cardsWithStats={cardsWithStats}
-                    allTypes={allTypes}
-                    customTypes={customTypes}
-                    onUpdate={patch => updateChart(chart.id, patch)}
-                    onRemove={page.charts.length > 1 ? () => removeChart(chart.id) : null}
-                    onZoom={() => setZoomedChart(chart.id)}
-                    isActive={isActive}
-                    isDragging={!!previewLayout}
-                    isSelected={selectedChart === chart.id}
-                    onSelect={id => setSelectedChart(id)}
-                    onDragStart={onDragStart}
-                    onResizeStart={onResizeStart}
-                  />
-                )
-              })}
-            </div>
+          <div ref={gridRef} style={{
+            flex:1,
+            display:'grid',
+            gridTemplateColumns:`repeat(${COLS}, 1fr)`,
+            gridTemplateRows:`repeat(${maxRow}, 1fr)`,
+            gap:GAP,
+            overflow:'hidden',
+          }}>
+            {displayCharts.map(chart => {
+              const isActive = activeId === chart.id
+              return (
+                <ChartCell
+                  key={chart.id}
+                  chart={chart}
+                  chartData={buildChartData(chart)}
+                  allStatKeys={getChartStatKeys(chart)}
+                  statLabel={statLabel}
+                  cardsWithStats={cardsWithStats}
+                  allTypes={allTypes}
+                  customTypes={customTypes}
+                  onUpdate={patch => updateChart(chart.id, patch)}
+                  onRemove={page.charts.length > 1 ? () => removeChart(chart.id) : null}
+                  onZoom={() => setZoomedChart(chart.id)}
+                  isActive={isActive}
+                  isDragging={!!previewLayout}
+                  isSelected={selectedChart === chart.id}
+                  onSelect={id => setSelectedChart(id)}
+                  onDragStart={onDragStart}
+                  onResizeStart={onResizeStart}
+                />
+              )
+            })}
             {page.charts.length < MAX_CHARTS && (
-              <div style={{ display:'flex', justifyContent:'center', padding:'12px 0' }}>
-                <button onClick={addChart}
-                  style={{ width:32, height:32, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center',
-                    background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)',
-                    color:'var(--text-muted,#8a8a8a)', cursor:'pointer', transition:'all 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor='var(--accent-30)'; e.currentTarget.style.color='var(--accent,#c8a064)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(255,255,255,0.1)'; e.currentTarget.style.color='var(--text-muted,#8a8a8a)' }}
-                  title="Ajouter un graphique">
-                  <Icon name="plus" size={14} />
-                </button>
-              </div>
+              <AddChartCell charts={displayCharts} maxRow={maxRow} onAdd={addChart} />
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
@@ -410,15 +411,31 @@ function CardPicker({ cardIds, cardsWithStats, allTypes, customTypes, onChange }
           const isCollapsed = !!collapsed[typeId]
           return (
             <div key={typeId} style={{ marginBottom:2 }}>
-              <div onClick={() => setCollapsed(p => ({ ...p, [typeId]: !p[typeId] }))}
-                style={{ display:'flex', alignItems:'center', gap:4, padding:'3px 4px', cursor:'pointer', fontSize:10, color:'var(--text-secondary,#c0c0c0)', borderRadius:3 }}
-                onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.03)'}
-                onMouseLeave={e => e.currentTarget.style.background='transparent'}>
-                <Icon name={isCollapsed ? 'chevron_right' : 'chevron_down'} size={8} style={{ flexShrink:0 }} />
-                <span style={{ fontSize:11 }}>{type?.icon||'📄'}</span>
-                <span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{type?.name||typeId}</span>
-                <span style={{ fontSize:9, color:'var(--text-muted,#8a8a8a)' }}>{groupCards.length}</span>
-              </div>
+              {(() => {
+                const groupIds = groupCards.map(c => c.id)
+                const allSel = groupIds.every(id => cardIds.includes(id))
+                const someSel = !allSel && groupIds.some(id => cardIds.includes(id))
+                const toggleGroup = e => {
+                  e.stopPropagation()
+                  if (allSel) onChange(cardIds.filter(id => !groupIds.includes(id)))
+                  else onChange([...new Set([...cardIds, ...groupIds])])
+                }
+                return (
+                  <div style={{ display:'flex', alignItems:'center', gap:4, padding:'3px 4px', cursor:'pointer', fontSize:10, color:'var(--text-secondary,#c0c0c0)', borderRadius:3 }}
+                    onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.03)'}
+                    onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                    <input type="checkbox" checked={allSel} ref={el => { if (el) el.indeterminate = someSel }}
+                      onChange={toggleGroup} onClick={e => e.stopPropagation()}
+                      style={{ accentColor:'var(--accent,#c8a064)', width:10, height:10, flexShrink:0 }} />
+                    <Icon name={isCollapsed ? 'chevron_right' : 'chevron_down'} size={8} style={{ flexShrink:0 }}
+                      onClick={() => setCollapsed(p => ({ ...p, [typeId]: !p[typeId] }))} />
+                    <span style={{ fontSize:11 }} onClick={() => setCollapsed(p => ({ ...p, [typeId]: !p[typeId] }))}>{type?.icon||'📄'}</span>
+                    <span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}
+                      onClick={() => setCollapsed(p => ({ ...p, [typeId]: !p[typeId] }))}>{type?.name||typeId}</span>
+                    <span style={{ fontSize:9, color:'var(--text-muted,#8a8a8a)' }}>{groupCards.length}</span>
+                  </div>
+                )
+              })()}
               {!isCollapsed && groupCards.map(card => {
                 const sel = cardIds.includes(card.id)
                 const color = CHART_COLORS[cardsWithStats.indexOf(card) % CHART_COLORS.length]
@@ -449,6 +466,7 @@ function CardPicker({ cardIds, cardsWithStats, allTypes, customTypes, onChange }
 function ChartCell({ chart, chartData, allStatKeys, statLabel, cardsWithStats, allTypes, customTypes, onUpdate, onRemove, onZoom, isActive, isDragging, isSelected, onSelect, onDragStart, onResizeStart }) {
   const [showConfig, setShowConfig] = useState(false)
   const configRef = useRef()
+  const configBtnRef = useRef()
   const longPressRef = useRef({ timer: null })
   const activeStats = chart.stats.length > 0 ? chart.stats : allStatKeys
   const title = chart.title || (chart.type === 'radar' ? 'Radar' : 'Barres')
@@ -527,7 +545,7 @@ function ChartCell({ chart, chartData, allStatKeys, statLabel, cardsWithStats, a
           <Icon name="fullscreen" size={12} />
         </button>
         <div style={{ position:'relative' }}>
-          <button onClick={e => { e.stopPropagation(); setShowConfig(!showConfig) }}
+          <button ref={configBtnRef} onClick={e => { e.stopPropagation(); setShowConfig(!showConfig) }}
             onMouseDown={e => e.stopPropagation()}
             style={{ background: showConfig ? 'var(--accent-12)' : 'none', border:'none', color: showConfig ? 'var(--accent,#c8a064)' : 'var(--text-muted,#8a8a8a)', cursor:'pointer', padding:'2px 4px', fontSize:11, borderRadius:4 }}
             onMouseEnter={e => { if(!showConfig) e.currentTarget.style.color='var(--accent,#c8a064)' }}
@@ -536,7 +554,7 @@ function ChartCell({ chart, chartData, allStatKeys, statLabel, cardsWithStats, a
             <Icon name="settings" size={12} />
           </button>
           {showConfig && (
-            <ChartConfigPopup ref={configRef} chart={chart} allStatKeys={allStatKeys} statLabel={statLabel}
+            <ChartConfigPopup ref={configRef} anchorRef={configBtnRef} chart={chart} allStatKeys={allStatKeys} statLabel={statLabel}
               cardsWithStats={cardsWithStats} allTypes={allTypes} customTypes={customTypes}
               onUpdate={onUpdate} onRemove={onRemove} onClose={() => setShowConfig(false)} />
           )}
@@ -618,6 +636,72 @@ function ChartCell({ chart, chartData, allStatKeys, statLabel, cardsWithStats, a
   )
 }
 
+// ─── Find largest free rectangle in the grid ────────────────
+function findLargestFreeRect(charts, maxRow) {
+  // Search within existing rows + MIN_H extra to allow overflow below
+  const rows = Math.max(maxRow, charts.reduce((m, c) => Math.max(m, c.y + c.h), 0)) + MIN_H
+  // Build occupancy grid
+  const grid = Array.from({ length: rows }, () => new Uint8Array(COLS))
+  charts.forEach(c => {
+    for (let r = c.y; r < Math.min(c.y + c.h, rows); r++)
+      for (let col = c.x; col < Math.min(c.x + c.w, COLS); col++)
+        grid[r][col] = 1
+  })
+  // For each cell, compute max consecutive free cells above (including itself)
+  const heights = Array.from({ length: rows }, () => new Uint16Array(COLS))
+  for (let col = 0; col < COLS; col++) {
+    heights[0][col] = grid[0][col] ? 0 : 1
+    for (let r = 1; r < rows; r++)
+      heights[r][col] = grid[r][col] ? 0 : heights[r - 1][col] + 1
+  }
+  // Largest rectangle in histogram per row
+  let best = { x: 0, y: 0, w: 0, h: 0, area: 0 }
+  for (let r = 0; r < rows; r++) {
+    const stack = []
+    for (let col = 0; col <= COLS; col++) {
+      const h = col < COLS ? heights[r][col] : 0
+      let start = col
+      while (stack.length > 0 && stack[stack.length - 1].h > h) {
+        const top = stack.pop()
+        const w = col - top.start
+        const area = w * top.h
+        if (area > best.area && w >= MIN_W && top.h >= MIN_H) {
+          best = { x: top.start, y: r - top.h + 1, w, h: top.h, area }
+        }
+        start = top.start
+      }
+      stack.push({ start, h })
+    }
+  }
+  // No space found at all — null means don't show the + cell
+  if (best.area === 0) return null
+  return best
+}
+
+// ─── Add Chart Cell (placed in largest free rectangle) ───────
+function AddChartCell({ charts, maxRow, onAdd }) {
+  const rect = useMemo(() => findLargestFreeRect(charts, maxRow), [charts, maxRow])
+  if (!rect) return null
+  return (
+    <div style={{
+      gridColumn: `${rect.x + 1} / span ${rect.w}`,
+      gridRow: `${rect.y + 1} / span ${rect.h}`,
+      display:'flex', alignItems:'center', justifyContent:'center',
+      borderRadius:14, border:'1px dashed rgba(255,255,255,0.08)',
+      cursor:'pointer', transition:'all 0.15s',
+    }}
+      onClick={onAdd}
+      onMouseEnter={e => { e.currentTarget.style.borderColor='var(--accent-30,rgba(200,160,100,0.3))'; e.currentTarget.style.background='rgba(255,255,255,0.02)' }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(255,255,255,0.08)'; e.currentTarget.style.background='transparent' }}>
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, color:'var(--text-muted,#8a8a8a)', transition:'color 0.12s' }}
+        onMouseEnter={e => e.currentTarget.style.color='var(--accent,#c8a064)'}
+        onMouseLeave={e => e.currentTarget.style.color='var(--text-muted,#8a8a8a)'}>
+        <Icon name="plus" size={18} />
+      </div>
+    </div>
+  )
+}
+
 // ─── Zoomed Chart Panel ──────────────────────────────────────
 function ZoomedChartPanel({ chart, chartData, allStatKeys, statLabel, onUpdate, onClose, cardsWithStats, allTypes, customTypes }) {
   const activeStats = chart.stats.length > 0 ? chart.stats : allStatKeys
@@ -653,38 +737,58 @@ function ZoomedChartPanel({ chart, chartData, allStatKeys, statLabel, onUpdate, 
               onChange={ids => onUpdate({ cardIds: ids })} />
           </div>
 
-          <div>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
-              <span style={{ fontSize:11, color:'var(--text-secondary,#c0c0c0)' }}>Statistiques</span>
-              <span onClick={() => onUpdate({ stats: chart.stats.length === allStatKeys.length ? [] : [...allStatKeys] })}
-                style={{ fontSize:10, color:'var(--text-muted,#8a8a8a)', cursor:'pointer' }}
-                onMouseEnter={e => e.currentTarget.style.color='var(--accent,#c8a064)'}
-                onMouseLeave={e => e.currentTarget.style.color='var(--text-muted,#8a8a8a)'}>
-                {chart.stats.length > 0 && chart.stats.length === allStatKeys.length ? 'Aucun' : 'Tout'}
-              </span>
-            </div>
-            <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
-              {allStatKeys.map(k => {
-                const active = chart.stats.length === 0 || chart.stats.includes(k)
-                return (
-                  <label key={k} style={{ display:'flex', alignItems:'center', gap:7, cursor:'pointer', fontSize:12, color: active ? 'var(--text-secondary,#c0c0c0)' : 'var(--text-muted,#8a8a8a)' }}>
-                    <input type="checkbox" checked={active}
-                      onChange={() => {
-                        if (chart.stats.length === 0) {
-                          onUpdate({ stats: allStatKeys.filter(s => s !== k) })
-                        } else {
-                          const next = chart.stats.includes(k) ? chart.stats.filter(s => s !== k) : [...chart.stats, k]
-                          onUpdate({ stats: next.length === allStatKeys.length ? [] : next })
-                        }
-                      }}
-                      style={{ accentColor:'var(--accent,#c8a064)' }} />
-                    {statLabel(k)}
-                  </label>
-                )
-              })}
-              {allStatKeys.length === 0 && <span style={{ fontSize:10, color:'var(--text-muted,#8a8a8a)' }}>Aucune stat disponible</span>}
-            </div>
-          </div>
+          {(() => {
+            const allActive = chart.stats.length === 0
+            const noneActive = chart.stats.length > 0 && !allStatKeys.some(k => chart.stats.includes(k))
+            return (
+              <div>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
+                  <span style={{ fontSize:11, color:'var(--text-secondary,#c0c0c0)' }}>Statistiques</span>
+                  <div style={{ display:'flex', gap:8 }}>
+                    {!allActive && (
+                      <span onClick={() => onUpdate({ stats: [] })}
+                        style={{ fontSize:10, color:'var(--text-muted,#8a8a8a)', cursor:'pointer' }}
+                        onMouseEnter={e => e.currentTarget.style.color='var(--accent,#c8a064)'}
+                        onMouseLeave={e => e.currentTarget.style.color='var(--text-muted,#8a8a8a)'}>
+                        Tout
+                      </span>
+                    )}
+                    {!noneActive && (
+                      <span onClick={() => onUpdate({ stats: ['__none__'] })}
+                        style={{ fontSize:10, color:'var(--text-muted,#8a8a8a)', cursor:'pointer' }}
+                        onMouseEnter={e => e.currentTarget.style.color='var(--accent,#c8a064)'}
+                        onMouseLeave={e => e.currentTarget.style.color='var(--text-muted,#8a8a8a)'}>
+                        Aucun
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
+                  {allStatKeys.map(k => {
+                    const active = chart.stats.length === 0 || chart.stats.includes(k)
+                    return (
+                      <label key={k} style={{ display:'flex', alignItems:'center', gap:7, cursor:'pointer', fontSize:12, color: active ? 'var(--text-secondary,#c0c0c0)' : 'var(--text-muted,#8a8a8a)' }}>
+                        <input type="checkbox" checked={active}
+                          onChange={() => {
+                            if (chart.stats.length === 0) {
+                              onUpdate({ stats: allStatKeys.filter(s => s !== k) })
+                            } else if (chart.stats.includes(k)) {
+                              onUpdate({ stats: chart.stats.filter(s => s !== k) })
+                            } else {
+                              const next = [...chart.stats.filter(s => s !== '__none__'), k]
+                              onUpdate({ stats: next.length === allStatKeys.length ? [] : next })
+                            }
+                          }}
+                          style={{ accentColor:'var(--accent,#c8a064)' }} />
+                        {statLabel(k)}
+                      </label>
+                    )
+                  })}
+                  {allStatKeys.length === 0 && <span style={{ fontSize:10, color:'var(--text-muted,#8a8a8a)' }}>Aucune stat disponible</span>}
+                </div>
+              </div>
+            )
+          })()}
         </div>
 
         {/* Right: chart large */}
@@ -715,77 +819,177 @@ function ZoomedChartPanel({ chart, chartData, allStatKeys, statLabel, onUpdate, 
   )
 }
 
-// ─── Chart Config Popup ──────────────────────────────────────
-const ChartConfigPopup = React.forwardRef(({ chart, allStatKeys, statLabel, cardsWithStats, allTypes, customTypes, onUpdate, onRemove, onClose }, ref) => {
+// ─── Chart Config Popup (tabbed) ─────────────────────────────
+const CONFIG_TABS = [
+  { id:'type', label:'Type' },
+  { id:'cards', label:'Cartes' },
+  { id:'stats', label:'Stats' },
+]
+
+const ChartConfigPopup = React.forwardRef(({ chart, allStatKeys, statLabel, cardsWithStats, allTypes, customTypes, onUpdate, onRemove, onClose, anchorRef }, ref) => {
+  const [pos, setPos] = useState(null)
+  const [tab, setTab] = useState('type')
+
+  useEffect(() => {
+    const anchor = anchorRef?.current
+    if (!anchor) return
+    const rect = anchor.getBoundingClientRect()
+    const popupH = 340
+    const spaceBelow = window.innerHeight - rect.bottom
+    if (spaceBelow < popupH && rect.top > spaceBelow) {
+      setPos({ bottom: window.innerHeight - rect.top + 4, right: window.innerWidth - rect.right })
+    } else {
+      setPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    }
+  }, [anchorRef])
+
+  if (!pos) return null
+
   return (
     <div ref={ref} style={{
-      position:'absolute', top:'100%', right:0, marginTop:4, zIndex:100,
+      position:'fixed', ...pos, zIndex:1000,
       background:'var(--bg-panel-92,rgba(10,6,1,0.92))', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)',
       border:'1px solid var(--border-14)', borderRadius:10,
       width:260, boxShadow:'0 8px 32px rgba(0,0,0,0.8)', overflow:'hidden',
     }}>
+      {/* Title */}
       <div style={{ padding:'10px 12px', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
         <input value={chart.title || ''} onChange={e => onUpdate({ title: e.target.value })}
           placeholder={chart.type === 'radar' ? 'Radar' : 'Barres'}
           style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:6, padding:'5px 8px', color:'var(--text-primary,#f0f0f0)', fontSize:12, outline:'none', boxSizing:'border-box' }} />
       </div>
 
-      <div style={{ padding:'8px 12px', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
-        <div style={{ fontSize:10, color:'var(--text-secondary,#c0c0c0)', marginBottom:5, textTransform:'uppercase', letterSpacing:'0.06em' }}>Type</div>
-        <div style={{ display:'flex', gap:4 }}>
-          {['radar','bar'].map(t => (
-            <button key={t} onClick={() => onUpdate({ type: t })}
-              style={{
-                flex:1, padding:'4px 0', borderRadius:5, fontSize:11, cursor:'pointer', border:'1px solid',
-                background: chart.type === t ? 'var(--accent-12)' : 'rgba(255,255,255,0.03)',
-                borderColor: chart.type === t ? 'var(--accent-30)' : 'rgba(255,255,255,0.08)',
-                color: chart.type === t ? 'var(--accent,#c8a064)' : 'var(--text-muted,#8a8a8a)',
-              }}>
-              {t === 'radar' ? 'Radar' : 'Barres'}
-            </button>
-          ))}
-        </div>
+      {/* Tab bar */}
+      <div style={{ display:'flex', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
+        {CONFIG_TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            style={{
+              flex:1, padding:'6px 0', fontSize:10, cursor:'pointer', border:'none',
+              background: tab === t.id ? 'rgba(255,255,255,0.04)' : 'transparent',
+              borderBottom: tab === t.id ? '2px solid var(--accent,#c8a064)' : '2px solid transparent',
+              color: tab === t.id ? 'var(--accent,#c8a064)' : 'var(--text-muted,#8a8a8a)',
+              textTransform:'uppercase', letterSpacing:'0.06em', transition:'all 0.1s',
+            }}>
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      <div style={{ padding:'8px 12px', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
-        <div style={{ fontSize:10, color:'var(--text-secondary,#c0c0c0)', marginBottom:5, textTransform:'uppercase', letterSpacing:'0.06em' }}>Cartes</div>
-        <CardPicker cardIds={chart.cardIds} cardsWithStats={cardsWithStats} allTypes={allTypes} customTypes={customTypes}
-          onChange={ids => onUpdate({ cardIds: ids })} />
-      </div>
-
-      <div style={{ padding:'8px 12px', borderBottom: onRemove ? '1px solid rgba(255,255,255,0.05)' : 'none', maxHeight:160, overflowY:'auto' }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
-          <span style={{ fontSize:10, color:'var(--text-secondary,#c0c0c0)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Stats</span>
-          <span onClick={() => onUpdate({ stats: chart.stats.length === allStatKeys.length ? [] : [...allStatKeys] })}
-            style={{ fontSize:10, color:'var(--text-muted,#8a8a8a)', cursor:'pointer' }}
-            onMouseEnter={e => e.currentTarget.style.color='var(--accent,#c8a064)'}
-            onMouseLeave={e => e.currentTarget.style.color='var(--text-muted,#8a8a8a)'}>
-            {chart.stats.length > 0 && chart.stats.length === allStatKeys.length ? 'Aucun' : 'Tout'}
-          </span>
+      {/* Tab content */}
+      {tab === 'type' && (
+        <div style={{ padding:'10px 12px' }}>
+          <div style={{ display:'flex', gap:8 }}>
+            {['radar','bar'].map(t => {
+              const sel = chart.type === t
+              return (
+                <button key={t} onClick={() => onUpdate({ type: t })}
+                  style={{
+                    flex:1, padding:'10px 0 6px', borderRadius:8, cursor:'pointer', border:'2px solid',
+                    background: sel ? 'var(--accent-12)' : 'rgba(255,255,255,0.03)',
+                    borderColor: sel ? 'var(--accent,#c8a064)' : 'rgba(255,255,255,0.08)',
+                    display:'flex', flexDirection:'column', alignItems:'center', gap:6,
+                    transition:'all 0.12s',
+                  }}>
+                  <svg width={56} height={56} viewBox="0 0 56 56">
+                    {t === 'radar' ? (
+                      <React.Fragment>
+                        <polygon points="28,8 48,22 42,46 14,46 8,22" fill="none"
+                          stroke={sel ? 'var(--accent,#c8a064)' : 'rgba(255,255,255,0.15)'} strokeWidth="1" />
+                        <polygon points="28,18 40,26 37,40 19,40 16,26" fill="none"
+                          stroke={sel ? 'var(--accent,#c8a064)' : 'rgba(255,255,255,0.1)'} strokeWidth="1" />
+                        <polygon points="28,12 44,24 39,43 17,43 12,24"
+                          fill={sel ? 'var(--accent,#c8a064)' : 'rgba(255,255,255,0.25)'} fillOpacity={sel ? 0.25 : 0.12}
+                          stroke={sel ? 'var(--accent,#c8a064)' : 'rgba(255,255,255,0.3)'} strokeWidth="1.5" />
+                        {[[28,8],[48,22],[42,46],[14,46],[8,22]].map(([cx,cy],i) => (
+                          <circle key={i} cx={cx} cy={cy} r={2}
+                            fill={sel ? 'var(--accent,#c8a064)' : 'rgba(255,255,255,0.25)'} />
+                        ))}
+                      </React.Fragment>
+                    ) : (
+                      <React.Fragment>
+                        {[[8,18,8,38],[20,10,8,38],[32,24,8,38],[44,14,8,38]].map(([x,y,w,h2],i) => (
+                          <rect key={i} x={x} y={y} width={w} height={h2-y} rx={2}
+                            fill={sel ? 'var(--accent,#c8a064)' : 'rgba(255,255,255,0.25)'}
+                            fillOpacity={sel ? 0.5 + i*0.12 : 0.2 + i*0.08} />
+                        ))}
+                        <line x1="4" y1="42" x2="52" y2="42"
+                          stroke={sel ? 'var(--accent,#c8a064)' : 'rgba(255,255,255,0.15)'} strokeWidth="1" />
+                      </React.Fragment>
+                    )}
+                  </svg>
+                  <span style={{ fontSize:10, color: sel ? 'var(--accent,#c8a064)' : 'var(--text-darker,#2e2e2e)' }}>
+                    {t === 'radar' ? 'Radar' : 'Barres'}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
         </div>
-        {allStatKeys.map(k => {
-          const active = chart.stats.length === 0 || chart.stats.includes(k)
-          return (
-            <label key={k} style={{ display:'flex', alignItems:'center', gap:6, padding:'2px 0', cursor:'pointer', fontSize:11, color: active ? 'var(--text-secondary,#c0c0c0)' : 'var(--text-muted,#8a8a8a)' }}>
-              <input type="checkbox" checked={active}
-                onChange={() => {
-                  if (chart.stats.length === 0) {
-                    onUpdate({ stats: allStatKeys.filter(s => s !== k) })
-                  } else {
-                    const next = chart.stats.includes(k) ? chart.stats.filter(s => s !== k) : [...chart.stats, k]
-                    onUpdate({ stats: next.length === allStatKeys.length ? [] : next })
-                  }
-                }}
-                style={{ accentColor:'var(--accent,#c8a064)' }} />
-              {statLabel(k)}
-            </label>
-          )
-        })}
-      </div>
+      )}
+
+      {tab === 'cards' && (
+        <div style={{ padding:'10px 12px' }}>
+          <CardPicker cardIds={chart.cardIds} cardsWithStats={cardsWithStats} allTypes={allTypes} customTypes={customTypes}
+            onChange={ids => onUpdate({ cardIds: ids })} />
+        </div>
+      )}
+
+      {tab === 'stats' && (
+        <div style={{ padding:'10px 12px', maxHeight:200, overflowY:'auto' }}>
+          {(() => {
+            const allActive = chart.stats.length === 0
+            const noneActive = chart.stats.length > 0 && !allStatKeys.some(k => chart.stats.includes(k))
+            return (
+              <>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:8, marginBottom:6 }}>
+                  {!allActive && (
+                    <span onClick={() => onUpdate({ stats: [] })}
+                      style={{ fontSize:10, color:'var(--text-muted,#8a8a8a)', cursor:'pointer' }}
+                      onMouseEnter={e => e.currentTarget.style.color='var(--accent,#c8a064)'}
+                      onMouseLeave={e => e.currentTarget.style.color='var(--text-muted,#8a8a8a)'}>
+                      Tout
+                    </span>
+                  )}
+                  {!noneActive && (
+                    <span onClick={() => onUpdate({ stats: ['__none__'] })}
+                      style={{ fontSize:10, color:'var(--text-muted,#8a8a8a)', cursor:'pointer' }}
+                      onMouseEnter={e => e.currentTarget.style.color='var(--accent,#c8a064)'}
+                      onMouseLeave={e => e.currentTarget.style.color='var(--text-muted,#8a8a8a)'}>
+                      Aucun
+                    </span>
+                  )}
+                </div>
+                {allStatKeys.map(k => {
+                  const active = chart.stats.length === 0 || chart.stats.includes(k)
+                  return (
+                    <label key={k} style={{ display:'flex', alignItems:'center', gap:6, padding:'2px 0', cursor:'pointer', fontSize:11, color: active ? 'var(--text-secondary,#c0c0c0)' : 'var(--text-muted,#8a8a8a)' }}>
+                      <input type="checkbox" checked={active}
+                        onChange={() => {
+                          if (chart.stats.length === 0) {
+                            // Was "all" → uncheck one → explicit list without this key
+                            onUpdate({ stats: allStatKeys.filter(s => s !== k) })
+                          } else if (chart.stats.includes(k)) {
+                            onUpdate({ stats: chart.stats.filter(s => s !== k) })
+                          } else {
+                            const next = [...chart.stats.filter(s => s !== '__none__'), k]
+                            onUpdate({ stats: next.length === allStatKeys.length ? [] : next })
+                          }
+                        }}
+                        style={{ accentColor:'var(--accent,#c8a064)' }} />
+                      {statLabel(k)}
+                    </label>
+                  )
+                })}
+                {allStatKeys.length === 0 && <span style={{ fontSize:10, color:'var(--text-muted,#8a8a8a)' }}>Aucune stat disponible</span>}
+              </>
+            )
+          })()}
+        </div>
+      )}
 
       {onRemove && (
         <div onClick={() => { onRemove(); onClose() }}
-          style={{ display:'flex', alignItems:'center', gap:7, padding:'8px 12px', cursor:'pointer', color:'var(--danger-muted,#8a5a5a)', fontSize:11, transition:'background 0.1s' }}
+          style={{ display:'flex', alignItems:'center', gap:7, padding:'8px 12px', borderTop:'1px solid rgba(255,255,255,0.05)', cursor:'pointer', color:'var(--danger-muted,#8a5a5a)', fontSize:11, transition:'background 0.1s' }}
           onMouseEnter={e => e.currentTarget.style.background='var(--danger-06)'}
           onMouseLeave={e => e.currentTarget.style.background='transparent'}>
           <Icon name="trash" size={11} />

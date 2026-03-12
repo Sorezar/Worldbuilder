@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Icon, Btn, Modal } from '../components/ui.jsx'
 import { BUILTIN_TYPES } from '../data/types.js'
 import { TITLE_FONTS, BODY_FONTS, GENRE_PRESETS, resolveTheme } from '../store/useStore.js'
+import GraphCore from '../components/GraphCore.jsx'
 
 export default function HomeView({ world, setWorld, cards, customTypes, onOpenCard, onCreateCard, onShowTypes }) {
   const [editingWelcome, setEditingWelcome] = useState(false)
@@ -72,10 +73,13 @@ export default function HomeView({ world, setWorld, cards, customTypes, onOpenCa
             </div>
           )}
 
-          {/* Mini canvas / graph preview */}
+          {/* Graph preview */}
           {cards.length > 0 && (
             <div style={{ marginTop: 36 }}>
-              <MiniGraph cards={cards} customTypes={customTypes} onOpenCard={onOpenCard} />
+              <h3 style={{ fontFamily: "var(--font)", fontSize: 15, color: 'var(--text-muted,#8a8a8a)', marginBottom: 12, fontWeight: 400 }}>Vue d'ensemble</h3>
+              <div style={{ height: 280, borderRadius: 14, overflow: 'hidden' }}>
+                <GraphCore cards={cards} customTypes={customTypes} onOpenCard={onOpenCard} storageKey="wf_home_graph" compact />
+              </div>
             </div>
           )}
         </div>
@@ -121,41 +125,6 @@ function RecentCard({ card, customTypes, onClick }) {
         <div style={{ fontSize: 10, color: 'var(--text-dark,#444444)', marginTop: 3 }}>
           {card.updatedAt ? new Date(card.updatedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : 'À l\'instant'}
         </div>
-      </div>
-    </div>
-  )
-}
-
-function MiniGraph({ cards, customTypes, onOpenCard }) {
-  const BUILTIN_COLORS = { character: '#c084fc', location: '#f59e0b', faction: '#ef4444', item: '#06b6d4', event: '#22c55e', lore: '#a78bfa', ecology: '#84cc16' }
-  const nodes = cards.slice(0, 20).map((c, i) => {
-    const angle = (i / Math.min(cards.length, 20)) * Math.PI * 2
-    const r = 100 + Math.random() * 40
-    const type = (customTypes || []).find(t => t.id === c.typeId)
-    return { ...c, x: 300 + r * Math.cos(angle), y: 140 + r * Math.sin(angle), color: type?.color || BUILTIN_COLORS[c.typeId] || '#8a8a8a' }
-  })
-  const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]))
-
-  return (
-    <div>
-      <h3 style={{ fontFamily: "var(--font)", fontSize: 15, color: 'var(--text-muted,#8a8a8a)', marginBottom: 12, fontWeight: 400 }}>Vue d'ensemble</h3>
-      <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, overflow: 'hidden' }}>
-        <svg width="100%" height={280} viewBox="0 0 600 280">
-          {nodes.map(n => (n.props ? Object.values(n.props) : []).flat().map(refId => {
-            const target = nodeMap[refId]
-            if (!target) return null
-            return <line key={`${n.id}-${refId}`} x1={n.x} y1={n.y} x2={target.x} y2={target.y} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
-          }))}
-          {nodes.map(n => (
-            <g key={n.id} onClick={() => onOpenCard(n.id)} style={{ cursor: 'pointer' }}>
-              <circle cx={n.x} cy={n.y} r={8} fill={n.color + '40'} stroke={n.color} strokeWidth={1.5} />
-              {n.image && <image href={n.image} x={n.x - 7} y={n.y - 7} width={14} height={14} clipPath="inset(0 round 50%)" />}
-              <text x={n.x} y={n.y + 18} textAnchor="middle" fill="var(--text-muted,#8a8a8a)" fontSize={9} fontFamily="var(--font-body)">
-                {n.name.slice(0, 10)}{n.name.length > 10 ? '…' : ''}
-              </text>
-            </g>
-          ))}
-        </svg>
       </div>
     </div>
   )
