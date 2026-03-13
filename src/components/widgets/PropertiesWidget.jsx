@@ -1,21 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Icon, InlineEdit } from '../ui.jsx'
+import { Icon, InlineEdit, ICON_GRID } from '../ui.jsx'
 import { getEffectiveProps, getType, FIELD_TYPES } from '../../data/types.js'
 import { uid } from '../../store/useStore.js'
 import { DropdownPropPicker } from '../../views/CardTypesView.jsx'
-
-const EMOJI_GRID = [
-  '😀','😂','😍','🥳','😎','🤔','😢','😡','🥺','🤩',
-  '👤','👥','👑','🧙','🧝','🧛','🧟','🦸','👻','💀',
-  '⚔️','🛡','🗡','🏹','🔮','✨','💎','🔥','❄️','⚡',
-  '🌍','🗺','🏰','🏛','🏙','🏡','⛪','🗿','🌋','🏔',
-  '📍','🌊','🌲','🌸','🍃','🌿','🦎','🐉','🦅','🐺',
-  '📜','📖','📚','📝','📅','📌','🔖','🏷','📊','📈',
-  '⚜️','🪶','🎭','🎪','🎉','🎵','🔔','💡','🕯','🧪',
-  '⚗️','🌀','⛩','🔭','⚖️','🧭','🗝','💰','🎲','🃏',
-  '❤️','💔','💜','💙','💚','💛','🧡','🤎','🖤','🤍',
-  '⭐','✦','◆','●','■','▲','☰','#','☀️','🌙',
-]
 
 export default function PropertiesWidget({ widget, card, cards, customTypes, allTypes, calendars, onUpdateCard, onOpenCard, onCreateCard, layout }) {
   const [addingExtraProp, setAddingExtraProp] = useState(false)
@@ -260,19 +247,19 @@ function PropEditorMini({ prop, displayName, emoji, onRename, onChangeEmoji, onR
 
   const commitName = () => { if (name.trim() && name.trim() !== displayName) onRename?.(name.trim()) }
   const selectEmoji = em => { onChangeEmoji?.(em); setShowEmojiPicker(false) }
-  const filteredEmojis = emojiSearch ? EMOJI_GRID.filter(e => e.includes(emojiSearch)) : EMOJI_GRID
+  const filteredEmojis = emojiSearch ? ICON_GRID.filter(ic => ic.n.includes(emojiSearch.toLowerCase()) || ic.c === emojiSearch) : ICON_GRID
 
   return (
     <div ref={ref} style={{
       position: 'absolute', top: '100%', left: -8, zIndex: 500, marginTop: 2,
-      background: 'var(--bg-panel-92,rgba(10,6,1,0.92))', backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
+      background: 'var(--bg-panel-92,rgba(10,6,1,0.92))',
       border: '1px solid var(--border-14)', borderRadius: 10,
       width: 220, boxShadow: '0 8px 32px rgba(0,0,0,0.8)', overflow: 'visible',
     }}>
       {/* Emoji + Name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <button onClick={() => setShowEmojiPicker(v => !v)}
-          style={{ width: 26, height: 26, borderRadius: 6, border: '1px solid var(--border-14)', background: showEmojiPicker ? 'var(--accent-18)' : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 13, flexShrink: 0 }}>
+          style={{ width: 26, height: 26, borderRadius: 6, border: '1px solid var(--border-14)', background: showEmojiPicker ? 'var(--accent-18)' : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 13, flexShrink: 0, fontVariantEmoji: 'text' }}>
           {emoji}
         </button>
         <input autoFocus value={name} onChange={e => setName(e.target.value)}
@@ -286,16 +273,17 @@ function PropEditorMini({ prop, displayName, emoji, onRename, onChangeEmoji, onR
       {showEmojiPicker && (
         <div style={{ padding: '6px 8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           <input value={emojiSearch} onChange={e => setEmojiSearch(e.target.value)}
-            placeholder="Rechercher..."
+            placeholder="Rechercher des icônes..."
             style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 5, padding: '3px 7px', color: 'var(--text-secondary,#c0c0c0)', fontSize: 10, outline: 'none', marginBottom: 4, boxSizing: 'border-box' }}
           />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 2, maxHeight: 120, overflowY: 'auto' }}>
-            {filteredEmojis.map((em, i) => (
-              <button key={i} onClick={() => selectEmoji(em)}
-                style={{ width: '100%', aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', borderRadius: 3, cursor: 'pointer', fontSize: 12, padding: 0 }}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 2, maxHeight: 120, overflowY: 'auto' }}>
+            {filteredEmojis.map((ic, i) => (
+              <button key={i} onClick={() => selectEmoji(ic.c)}
+                title={ic.n.split(' ').slice(0,2).join(' ')}
+                style={{ width: '100%', aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', borderRadius: 3, cursor: 'pointer', fontSize: 13, padding: 0, fontVariantEmoji: 'text', color: 'var(--text-primary,#e8e0d4)' }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                {em}
+                {ic.c}
               </button>
             ))}
           </div>

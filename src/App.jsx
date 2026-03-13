@@ -193,7 +193,7 @@ export default function App() {
       </div>
 
       {showTypes && (
-        <DraggableWindow title="Card Types" icon="⚙️" onClose={() => setShowTypes(false)} initialX={100} initialY={54} initialW={900} initialH={580}>
+        <DraggableWindow title="Card Types" onClose={() => setShowTypes(false)} initialX={100} initialY={54} initialW={900} initialH={580}>
           <CardTypesView customTypes={customTypes} onUpdateType={handleUpdateType} onCreateCustomType={createCustomType} onDeleteType={deleteCustomType} />
         </DraggableWindow>
       )}

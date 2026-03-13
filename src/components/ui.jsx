@@ -350,23 +350,124 @@ export function InlineEdit({ value, onChange, placeholder, style, multiline = fa
   )
 }
 
-// ─── Emoji Grid & Picker ──────────────────────────────────────
-export const EMOJI_GRID = [
-  '😀','😂','😍','🥳','😎','🤔','😢','😡','🥺','🤩',
-  '👤','👥','👑','🧙','🧝','🧛','🧟','🦸','👻','💀',
-  '⚔️','🛡','🗡','🏹','🔮','✨','💎','🔥','❄️','⚡',
-  '🌍','🗺','🏰','🏛','🏙','🏡','⛪','🗿','🌋','🏔',
-  '📍','🌊','🌲','🌸','🍃','🌿','🦎','🐉','🦅','🐺',
-  '📜','📖','📚','📝','📅','📌','🔖','🏷','📊','📈',
-  '⚜️','🪶','🎭','🎪','🎉','🎵','🔔','💡','🕯','🧪',
-  '⚗️','🌀','⛩','🔭','⚖️','🧭','🗝','💰','🎲','🃏',
-  '❤️','💔','💜','💙','💚','💛','🧡','🤎','🖤','🤍',
-  '⭐','✦','◆','●','■','▲','☰','#','☀️','🌙',
+// ─── Icon Grid & Picker (monochrome Unicode symbols) ─────────
+export const ICON_CATEGORIES = [
+  { id: 'all', icon: '☰', label: 'Tout' },
+  { id: 'people', icon: '♟', label: 'Personnages' },
+  { id: 'combat', icon: '⚔', label: 'Combat' },
+  { id: 'places', icon: '♜', label: 'Lieux' },
+  { id: 'nature', icon: '❀', label: 'Nature' },
+  { id: 'magic', icon: '✦', label: 'Magie' },
+  { id: 'objects', icon: '⚙', label: 'Objets' },
+  { id: 'symbols', icon: '◆', label: 'Symboles' },
 ]
+
+export const ICON_GRID = [
+  // ── Personnages ──
+  { c:'♔', n:'roi king couronne crown', cat:'people' },
+  { c:'♕', n:'reine queen couronne', cat:'people' },
+  { c:'♚', n:'roi king noir black', cat:'people' },
+  { c:'♛', n:'reine queen noire black', cat:'people' },
+  { c:'♟', n:'pion pawn soldat soldier', cat:'people' },
+  { c:'♗', n:'fou bishop clerc pretre', cat:'people' },
+  { c:'♘', n:'cavalier knight cheval horse', cat:'people' },
+  { c:'☠', n:'mort death crane skull pirate', cat:'people' },
+  { c:'☻', n:'visage face sombre dark', cat:'people' },
+  { c:'☺', n:'visage face sourire smile', cat:'people' },
+  // ── Combat ──
+  { c:'⚔', n:'epee sword combat battle arme weapon', cat:'combat' },
+  { c:'⚒', n:'marteau hammer pioche outils tools', cat:'combat' },
+  { c:'☩', n:'croix cross croisade crusade', cat:'combat' },
+  { c:'†', n:'dague dagger croix cross', cat:'combat' },
+  { c:'‡', n:'double dague dagger', cat:'combat' },
+  { c:'⛨', n:'bouclier shield defense', cat:'combat' },
+  { c:'⚓', n:'ancre anchor marine naval', cat:'combat' },
+  { c:'⛏', n:'pioche pickaxe mine', cat:'combat' },
+  { c:'⛓', n:'chaine chain prison lien', cat:'combat' },
+  { c:'⚑', n:'drapeau flag banniere banner', cat:'combat' },
+  // ── Lieux ──
+  { c:'♜', n:'tour tower chateau castle forteresse', cat:'places' },
+  { c:'⛪', n:'eglise church temple religion', cat:'places' },
+  { c:'⛩', n:'torii temple shrine japonais', cat:'places' },
+  { c:'⌂', n:'maison house home habitation', cat:'places' },
+  { c:'⛫', n:'chateau castle forteresse fortress', cat:'places' },
+  { c:'⛰', n:'montagne mountain pic peak', cat:'places' },
+  { c:'⛲', n:'fontaine fountain place', cat:'places' },
+  { c:'⛺', n:'tente tent camp bivouac', cat:'places' },
+  { c:'⛵', n:'bateau boat voilier navire ship', cat:'places' },
+  { c:'☸', n:'roue wheel dharma gouvernail', cat:'places' },
+  // ── Nature ──
+  { c:'☀', n:'soleil sun lumiere light jour', cat:'nature' },
+  { c:'☾', n:'lune moon croissant nuit night', cat:'nature' },
+  { c:'☁', n:'nuage cloud ciel sky', cat:'nature' },
+  { c:'❄', n:'neige snow flocon hiver winter froid', cat:'nature' },
+  { c:'⚡', n:'eclair lightning foudre orage storm', cat:'nature' },
+  { c:'☂', n:'parapluie umbrella pluie rain', cat:'nature' },
+  { c:'❀', n:'fleur flower rose', cat:'nature' },
+  { c:'✿', n:'fleur flower lotus', cat:'nature' },
+  { c:'☘', n:'trefle shamrock plante nature', cat:'nature' },
+  { c:'⚘', n:'fleur flower rose plante', cat:'nature' },
+  // ── Magie ──
+  { c:'⚜', n:'fleur lys royaute noble heraldique', cat:'magic' },
+  { c:'✦', n:'etoile star magie magic brillant', cat:'magic' },
+  { c:'✧', n:'etoile star magie magic vide', cat:'magic' },
+  { c:'⊛', n:'cercle etoile circle star', cat:'magic' },
+  { c:'☯', n:'yin yang equilibre balance', cat:'magic' },
+  { c:'⚗', n:'alambic alchemie potion fiole', cat:'magic' },
+  { c:'⚛', n:'atome atom science energie', cat:'magic' },
+  { c:'☤', n:'caducee medecine sante health', cat:'magic' },
+  { c:'☥', n:'ankh egypte vie life eternel', cat:'magic' },
+  { c:'✡', n:'hexagramme etoile david', cat:'magic' },
+  // ── Objets ──
+  { c:'⚖', n:'balance justice scales loi law', cat:'objects' },
+  { c:'⚙', n:'engrenage gear mecanique machine', cat:'objects' },
+  { c:'✎', n:'crayon pencil ecrire plume write', cat:'objects' },
+  { c:'⚐', n:'drapeau blanc white flag paix', cat:'objects' },
+  { c:'✂', n:'ciseaux scissors couper cut', cat:'objects' },
+  { c:'♨', n:'source chaude hot spring vapeur steam', cat:'objects' },
+  { c:'⚱', n:'urne urn vase recipient', cat:'objects' },
+  { c:'♫', n:'musique music note melodie', cat:'objects' },
+  { c:'♪', n:'musique music note son', cat:'objects' },
+  { c:'⌛', n:'sablier hourglass temps time', cat:'objects' },
+  // ── Symboles ──
+  { c:'☆', n:'etoile star vide empty', cat:'symbols' },
+  { c:'★', n:'etoile star plein full', cat:'symbols' },
+  { c:'◇', n:'losange diamond vide', cat:'symbols' },
+  { c:'◆', n:'losange diamond plein', cat:'symbols' },
+  { c:'△', n:'triangle vide haut up', cat:'symbols' },
+  { c:'▽', n:'triangle vide bas down', cat:'symbols' },
+  { c:'○', n:'cercle circle vide rond', cat:'symbols' },
+  { c:'●', n:'cercle circle plein rond', cat:'symbols' },
+  { c:'□', n:'carre square vide', cat:'symbols' },
+  { c:'■', n:'carre square plein', cat:'symbols' },
+  { c:'▲', n:'triangle plein haut up', cat:'symbols' },
+  { c:'▼', n:'triangle plein bas down', cat:'symbols' },
+  { c:'◈', n:'losange diamond decoratif', cat:'symbols' },
+  { c:'⊕', n:'cercle plus croix positif', cat:'symbols' },
+  { c:'⊗', n:'cercle croix cancel annuler', cat:'symbols' },
+  { c:'⬡', n:'hexagone hexagon', cat:'symbols' },
+  { c:'❖', n:'losange decoratif diamond ornement', cat:'symbols' },
+  { c:'❋', n:'asterisque star decoratif', cat:'symbols' },
+  { c:'❊', n:'fleur decoratif ornement', cat:'symbols' },
+  { c:'❈', n:'flocon decoratif ornement', cat:'symbols' },
+  { c:'♥', n:'coeur heart amour love plein', cat:'symbols' },
+  { c:'♡', n:'coeur heart vide empty', cat:'symbols' },
+  { c:'♠', n:'pique spade carte card', cat:'symbols' },
+  { c:'♤', n:'pique spade vide', cat:'symbols' },
+  { c:'♦', n:'carreau diamond carte card', cat:'symbols' },
+  { c:'♢', n:'carreau diamond vide', cat:'symbols' },
+  { c:'♣', n:'trefle club carte card', cat:'symbols' },
+  { c:'♧', n:'trefle club vide', cat:'symbols' },
+  { c:'☰', n:'menu hamburger trigram liste', cat:'symbols' },
+  { c:'#', n:'diese hash number nombre', cat:'symbols' },
+]
+
+const ICO_STYLE = { fontVariantEmoji: 'text', color: 'var(--text-primary,#e8e0d4)' }
 
 export function EmojiPicker({ value, onChange, style }) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const [cat, setCat] = useState('all')
   const ref = useRef()
 
   useEffect(() => {
@@ -376,7 +477,11 @@ export function EmojiPicker({ value, onChange, style }) {
     return () => document.removeEventListener('mousedown', h)
   }, [open])
 
-  const filtered = search ? EMOJI_GRID.filter(e => e.includes(search)) : EMOJI_GRID
+  const filtered = ICON_GRID.filter(ic => {
+    if (search) return ic.n.includes(search.toLowerCase()) || ic.c === search
+    if (cat !== 'all') return ic.cat === cat
+    return true
+  })
 
   return (
     <div ref={ref} style={{ position:'relative', display:'inline-block', ...style }}>
@@ -386,32 +491,54 @@ export function EmojiPicker({ value, onChange, style }) {
           border: open ? '1px solid var(--accent-40)' : '1px solid rgba(255,255,255,0.09)',
           background: open ? 'var(--accent-10)' : 'rgba(255,255,255,0.05)',
           display:'flex', alignItems:'center', justifyContent:'center',
-          cursor:'pointer', fontSize:22, transition:'all 0.12s',
+          cursor:'pointer', fontSize:22, transition:'all 0.12s', ...ICO_STYLE,
         }}>
-        {value || '📌'}
+        {value || '☰'}
       </button>
       {open && (
         <div style={{
           position:'absolute', top:'calc(100% + 6px)', left:0, zIndex:600,
-          background:'var(--bg-panel-92,rgba(10,6,1,0.92))', backdropFilter:'blur(40px) saturate(1.5)', WebkitBackdropFilter:'blur(40px) saturate(1.5)',
+          background:'var(--bg-panel-92,rgba(10,6,1,0.92))',
           border:'1px solid var(--border-14,rgba(255,200,120,0.14))', borderRadius:12, overflow:'hidden',
-          boxShadow:'0 8px 32px rgba(0,0,0,0.7)', width:260, padding:'8px',
+          boxShadow:'0 8px 32px rgba(0,0,0,0.7)', width:280, padding:'8px',
         }}>
-          <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher…"
+          {/* Category tabs */}
+          <div style={{ display:'flex', gap:2, marginBottom:6, padding:'0 2px' }}>
+            {ICON_CATEGORIES.map(c => (
+              <button key={c.id} onClick={() => { setCat(c.id); setSearch('') }}
+                title={c.label}
+                style={{
+                  flex:1, aspectRatio:'1', display:'flex', alignItems:'center', justifyContent:'center',
+                  background: cat === c.id ? 'var(--accent-20)' : 'transparent',
+                  border:'none', borderRadius:4, cursor:'pointer', fontSize:13, padding:2,
+                  color: cat === c.id ? 'var(--accent,#c8a064)' : 'var(--text-dim,#5a5a5a)',
+                  transition:'all 0.1s', ...ICO_STYLE,
+                }}
+                onMouseEnter={e => { if(cat!==c.id) e.currentTarget.style.background='rgba(255,255,255,0.06)' }}
+                onMouseLeave={e => { if(cat!==c.id) e.currentTarget.style.background='transparent' }}>
+                {c.icon}
+              </button>
+            ))}
+          </div>
+          {/* Search */}
+          <input autoFocus value={search} onChange={e => { setSearch(e.target.value); if(e.target.value) setCat('all') }}
+            placeholder="Rechercher des icônes..."
             style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:6, padding:'5px 8px', color:'var(--text-secondary,#c0c0c0)', fontSize:11, outline:'none', marginBottom:6, boxSizing:'border-box' }}
           />
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(10, 1fr)', gap:2, maxHeight:160, overflowY:'auto' }}>
-            {filtered.map((em, i) => (
-              <button key={i} onClick={() => { onChange(em); setOpen(false); setSearch('') }}
+          {/* Grid */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(8, 1fr)', gap:2, maxHeight:200, overflowY:'auto' }}>
+            {filtered.map((ic, i) => (
+              <button key={i} onClick={() => { onChange(ic.c); setOpen(false); setSearch(''); setCat('all') }}
+                title={ic.n.split(' ').slice(0,2).join(' ')}
                 style={{
                   width:'100%', aspectRatio:'1', display:'flex', alignItems:'center', justifyContent:'center',
-                  background: value===em ? 'var(--accent-20)' : 'transparent',
-                  border:'none', borderRadius:4, cursor:'pointer', fontSize:14, padding:0, transition:'background 0.08s',
+                  background: value===ic.c ? 'var(--accent-20)' : 'transparent',
+                  border:'none', borderRadius:4, cursor:'pointer', fontSize:16, padding:0,
+                  transition:'background 0.08s', ...ICO_STYLE,
                 }}
-                onMouseEnter={e => { if(value!==em) e.currentTarget.style.background='rgba(255,255,255,0.08)' }}
-                onMouseLeave={e => { if(value!==em) e.currentTarget.style.background='transparent' }}>
-                {em}
+                onMouseEnter={e => { if(value!==ic.c) e.currentTarget.style.background='rgba(255,255,255,0.08)' }}
+                onMouseLeave={e => { if(value!==ic.c) e.currentTarget.style.background='transparent' }}>
+                {ic.c}
               </button>
             ))}
           </div>
