@@ -161,6 +161,23 @@ export function useStore() {
 
   const updateCard = useCallback((id, patch) => {
     setCardsState(prev => {
+      // Save history snapshot (skip layout-only and trivial updates)
+      const oldCard = prev.find(c => c.id === id)
+      if (oldCard && !patch._noHistory) {
+        const dominated = Object.keys(patch).every(k => k === 'layout' || k === 'updatedAt')
+        if (!dominated) {
+          try {
+            const hk = `wf_${resolvedWorldId}_history_${id}`
+            const history = load(hk, [])
+            const snapshot = { ...oldCard }
+            delete snapshot.image // don't store heavy image data in history
+            history.push({ ts: Date.now(), snapshot })
+            // Keep last 50 revisions max
+            if (history.length > 50) history.splice(0, history.length - 50)
+            save(hk, history)
+          } catch {}
+        }
+      }
       let next = prev.map(c => c.id === id ? { ...c, ...patch, updatedAt: Date.now() } : c)
 
       // ── Bidirectional card_ref sync ──
@@ -303,10 +320,19 @@ export function useStore() {
     setCalendarsState(prev => { const next = prev.filter(c => c.id !== id); save(dk('calendars'), next); return next })
   }, [resolvedWorldId])
 
+  const getCardHistory = useCallback((id) => {
+    return load(`wf_${resolvedWorldId}_history_${id}`, [])
+  }, [resolvedWorldId])
+
+  const restoreCardRevision = useCallback((id, snapshot) => {
+    updateCard(id, { ...snapshot, _noHistory: undefined })
+  }, [updateCard])
+
   return {
     world, setWorld, worlds, createWorld, deleteWorld,
     activeWorldId: resolvedWorldId, setActiveWorldId,
     cards, createCard, updateCard, deleteCard, duplicateCard,
+    getCardHistory, restoreCardRevision,
     customTypes: Array.isArray(customTypes) ? customTypes : [],
     createCustomType, updateCustomType, deleteCustomType,
     folders, createFolder, updateFolder, deleteFolder,

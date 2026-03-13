@@ -31,6 +31,7 @@ export default function App() {
   const store = useStore()
   const { world, setWorld, worlds, createWorld, deleteWorld, activeWorldId, setActiveWorldId,
           cards, createCard, updateCard, deleteCard, duplicateCard,
+          getCardHistory, restoreCardRevision,
           customTypes, createCustomType, updateCustomType, deleteCustomType,
           folders, createFolder, updateFolder, deleteFolder,
           calendars, createCalendar, updateCalendar, deleteCalendar } = store
@@ -165,12 +166,12 @@ export default function App() {
                 ? <MondesHome world={world} setWorld={setWorld} cards={cards} allTypes={allTypes}
                     calendars={calendars} createCalendar={createCalendar} updateCalendar={updateCalendar} deleteCalendar={deleteCalendar}
                     onOpenCard={openCard} onCreateCard={handleCreate} />
-                : <div style={{ flex:1, display:'flex', overflow:'hidden', minWidth:0, gap:8 }}>
+                : <div style={{ flex:1, display:'flex', overflow:'hidden', minWidth:0, gap:8, justifyContent: openCardIds.length === 1 ? 'center' : 'stretch' }}>
                     {openCardIds.map((cid) => {
                       const card = cards.find(c => c.id === cid)
                       if (!card) return null
                       const cardType = allTypes.find(t => t.id === card.typeId)
-                      const containerStyle = { flex:1, minWidth:300, height:'100%', overflow:'hidden', background: 'var(--bg-panel-55)', backdropFilter:'blur(40px) saturate(1.4)', WebkitBackdropFilter:'blur(40px) saturate(1.4)', borderRadius:16, border:'1px solid var(--border-10)' }
+                      const containerStyle = { flex: openCardIds.length === 1 ? '0 1 960px' : 1, minWidth:300, height:'100%', overflow:'hidden', background: 'var(--bg-panel-55,rgba(10,6,1,0.55))', backdropFilter:'blur(40px) saturate(1.4)', WebkitBackdropFilter:'blur(40px) saturate(1.4)', borderRadius:16, border:'1px solid rgba(255,255,255,0.06)' }
                       const commonProps = { card, cards, customTypes, allTypes, onUpdate: updateCard, onDelete: id => { deleteCard(id); closeCard(id) }, onClose: () => closeCard(cid), onOpenCard: openCard, onCreateCard: handleCreate }
                       if (cardType?.viewMode === 'canvas') return <div key={cid} style={containerStyle}><CanvasView {...commonProps} /></div>
                       if (cardType?.viewMode === 'family_tree') return <div key={cid} style={containerStyle}><FamilyTreeView {...commonProps} /></div>
@@ -180,6 +181,7 @@ export default function App() {
                           <CardWindow card={card} cards={cards} customTypes={customTypes} allTypes={allTypes} calendars={calendars}
                             onUpdate={updateCard} onDelete={id => { deleteCard(id); closeCard(id) }}
                             onClose={() => closeCard(cid)} onOpenCard={openCard} onCreateCard={handleCreate}
+                            getCardHistory={getCardHistory} restoreCardRevision={restoreCardRevision}
                           />
                         </div>
                       )

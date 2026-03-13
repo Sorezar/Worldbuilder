@@ -109,7 +109,7 @@ function simTick(nodes, edges, params, cx, cy, alpha) {
 }
 
 // ─── Main GraphCore component ────────────────────────────────
-export default function GraphCore({ cards, customTypes, onOpenCard, storageKey, compact }) {
+export default function GraphCore({ cards, customTypes, onOpenCard, storageKey, compact, externalShowSettings, onToggleSettings }) {
   const sk = storageKey ? `${storageKey}_settings` : null
   const pk = storageKey ? `${storageKey}_positions` : null
 
@@ -120,7 +120,9 @@ export default function GraphCore({ cards, customTypes, onOpenCard, storageKey, 
   const [zoom, setZoom] = useState(1)
   const [filter, setFilter] = useState('')
   const [hovered, setHovered] = useState(null)
-  const [showSettings, setShowSettings] = useState(false)
+  const [showSettingsLocal, setShowSettingsLocal] = useState(false)
+  const showSettings = externalShowSettings !== undefined ? externalShowSettings : showSettingsLocal
+  const setShowSettings = onToggleSettings || setShowSettingsLocal
   const [showLabels, setShowLabels] = useState(() => { const s = sk && load(sk, null); return s?.showLabels ?? true })
   const [hideIsolated, setHideIsolated] = useState(() => { const s = sk && load(sk, null); return s?.hideIsolated ?? false })
   const [params, setParams] = useState(() => { const s = sk && load(sk, null); return s?.params ? { ...SIM_DEFAULTS, ...s.params } : { ...SIM_DEFAULTS } })

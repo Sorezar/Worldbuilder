@@ -48,9 +48,9 @@ export default function PropertiesWidget({ widget, card, cards, customTypes, all
   ]
 
   const propIds = widget.config?.propIds
-  let visibleProps = orderedProps
+  let visibleProps = orderedProps.filter(p => p.id !== 'aliases')
   if (propIds && propIds !== 'all') {
-    visibleProps = orderedProps.filter(p => propIds.includes(p.id))
+    visibleProps = visibleProps.filter(p => propIds.includes(p.id))
   } else if (propIds === 'all') {
     const claimedIds = new Set()
     layout.forEach(w => {
@@ -95,7 +95,7 @@ export default function PropertiesWidget({ widget, card, cards, customTypes, all
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.07)' }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         {visibleProps.map(prop => {
           const isExtra = prop._source === 'extra'
           return (
@@ -121,15 +121,15 @@ export default function PropertiesWidget({ widget, card, cards, customTypes, all
           )
         })}
         {visibleProps.length === 0 && !addingExtraProp && (
-          <div style={{ padding: '10px 12px', color: 'var(--text-darker,#2e2e2e)', fontSize: 11 }}>Aucune propriete</div>
+          <div style={{ padding: '10px 12px', color: 'var(--text-dim,#5a5a5a)', fontSize: 11 }}>Aucune propriete</div>
         )}
         {propIds === 'all' && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 10px', borderTop: visibleProps.length > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
             <button onClick={() => setAddingExtraProp(true)}
-              style={{ background: 'none', border: 'none', color: 'var(--text-darker,#2e2e2e)', cursor: 'pointer', fontSize: 11, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', transition: 'color 0.1s' }}
+              style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: 11, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 4, transition: 'color 0.1s' }}
               onMouseEnter={e => e.currentTarget.style.color = 'var(--accent,#c8a064)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-darker,#2e2e2e)'}>
-              <Icon name="plus" size={10} />
+              onMouseLeave={e => e.currentTarget.style.color = '#999'}>
+              <Icon name="plus" size={10} /> Ajouter une propriété
             </button>
           </div>
         )}
@@ -225,7 +225,7 @@ function PropFieldCompact({ prop, value, onChange, cards, customTypes, allTypes,
       {insertAfter && <div style={{ position: 'absolute', bottom: -1, left: 8, right: 8, height: 2, background: 'var(--accent)', borderRadius: 1, pointerEvents: 'none' }} />}
       {/* Grip handle */}
       <span style={{ fontSize: 10, color: 'var(--text-darker,#2e2e2e)', cursor: 'grab', flexShrink: 0, lineHeight: '28px', letterSpacing: 1, userSelect: 'none', width: 14, textAlign: 'center' }}>⠿</span>
-      <div style={{ width: 96, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4, padding: '5px 0', color: 'var(--text-dim,#5a5a5a)', fontSize: 11, position: 'relative' }}>
+      <div style={{ width: 96, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4, padding: '5px 0', color: '#ccc', fontSize: 11, position: 'relative' }}>
         <span onClick={() => setShowEditor(v => !v)} title="Modifier"
           style={{ fontSize: 11, width: 14, textAlign: 'center', flexShrink: 0, cursor: 'pointer', borderRadius: 3, background: showEditor ? 'var(--accent-15)' : 'transparent', transition: 'background 0.1s' }}>{emoji}</span>
         <span onClick={() => setShowEditor(v => !v)} title="Modifier"

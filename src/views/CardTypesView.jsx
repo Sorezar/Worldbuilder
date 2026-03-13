@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Icon, Btn, ColorPicker, EmojiPicker } from '../components/ui.jsx'
 import { BUILTIN_TYPES, FIELD_TYPES } from '../data/types.js'
 import { uid } from '../store/useStore.js'
-import { WIDGET_TYPES, DEFAULT_CARD_LAYOUT, COLS, RESIZE_HANDLES, createWidget, resolveCollisions } from '../data/widgetDefaults.js'
+import { WIDGET_TYPES, DEFAULT_CARD_LAYOUT, createWidget, groupByRows, moveWidget, normalizeRows, migrateLayout } from '../data/widgetDefaults.js'
 
 export default function CardTypesView({ customTypes, onUpdateType, onCreateCustomType, onDeleteType }) {
   const typeMap = new Map()
@@ -104,12 +104,9 @@ function TypeTreeItem({ type, typeMap, selected, onSelect, depth=0, filtered, cu
 }
 
 // ─── TypeEditor ───────────────────────────────────────────────
-const MINI_GAP = 4
-const MINI_ROW_FALLBACK = 8 // fallback — actual row height computed as column width (square cells)
-
 function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
   const [color,      setColor]      = useState(type.color||'#c8a064')
-  const [layoutWidgets, setLayoutWidgets] = useState(type.defaultLayout || null)
+  const [layoutWidgets, setLayoutWidgets] = useState(() => type.defaultLayout ? migrateLayout(type.defaultLayout) : null)
   const [selectedWidgetId, setSelectedWidgetId] = useState(null)
   const [showAddWidget, setShowAddWidget] = useState(false)
 
@@ -119,30 +116,13 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
   const [dragPropId, setDragPropId] = useState(null)
   const [dragOverInfo, setDragOverInfo] = useState(null)
 
-  // Grid drag/resize state
-  const [dragging, setDragging] = useState(null)
-  const [resizing, setResizing] = useState(null)
-  const [previewLayout, setPreviewLayout] = useState(null)
-  const gridRef = useRef()
-  const pushRef = useRef({ timer: null, pos: null })
-  const [miniRowH, setMiniRowH] = useState(MINI_ROW_FALLBACK)
-
-  // Compute square cell height from grid width
-  useEffect(() => {
-    if (!gridRef.current) return
-    const ro = new ResizeObserver(entries => {
-      for (const e of entries) {
-        const cw = Math.floor((e.contentRect.width - MINI_GAP * (COLS - 1)) / COLS)
-        if (cw > 0) setMiniRowH(cw)
-      }
-    })
-    ro.observe(gridRef.current)
-    return () => ro.disconnect()
-  }, [])
+  // Widget drag state (row-based)
+  const [widgetDragId, setWidgetDragId] = useState(null)
+  const [widgetDropTarget, setWidgetDropTarget] = useState(null) // { row, side:'above'|'below'|'into' }
 
   const currentLayout = layoutWidgets || DEFAULT_CARD_LAYOUT
-  const displayLayout = previewLayout || currentLayout
-  const selectedWidget = selectedWidgetId ? displayLayout.find(w => w.id === selectedWidgetId) : null
+  const rows = groupByRows(currentLayout)
+  const selectedWidget = selectedWidgetId ? currentLayout.find(w => w.id === selectedWidgetId) : null
 
   const ensureCustomLayout = () => {
     if (!layoutWidgets) {
@@ -158,99 +138,9 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
     onUpdate({ defaultLayout: newLayout })
   }
 
-  // ── Grid drag/resize logic ──
-  const getGridCellSize = useCallback(() => {
-    if (!gridRef.current) return { cw: miniRowH, ch: miniRowH }
-    const rect = gridRef.current.getBoundingClientRect()
-    const cw = (rect.width - MINI_GAP * (COLS - 1)) / COLS
-    return { cw, ch: cw } // square cells
-  }, [miniRowH])
-
-  const onGridDragStart = useCallback((e, widget) => {
-    e.preventDefault(); e.stopPropagation()
-    const layout = ensureCustomLayout()
-    setDragging({ id: widget.id, startX: e.clientX, startY: e.clientY, origX: widget.x, origY: widget.y })
-    setPreviewLayout(layout.map(w => ({ ...w })))
-  }, [layoutWidgets])
-
-  const onGridResizeStart = useCallback((e, widget, edges) => {
-    e.preventDefault(); e.stopPropagation()
-    const layout = ensureCustomLayout()
-    setResizing({ id: widget.id, startX: e.clientX, startY: e.clientY, origX: widget.x, origY: widget.y, origW: widget.w, origH: widget.h, edges })
-    setPreviewLayout(layout.map(w => ({ ...w })))
-  }, [layoutWidgets])
-
-  useEffect(() => {
-    if (!dragging && !resizing) return
-    const layout = layoutWidgets || DEFAULT_CARD_LAYOUT
-    const { cw, ch } = getGridCellSize()
-
-    const onMove = e => {
-      if (dragging) {
-        const dx = Math.round((e.clientX - dragging.startX) / (cw + MINI_GAP))
-        const dy = Math.round((e.clientY - dragging.startY) / (ch + MINI_GAP))
-        const w = layout.find(w => w.id === dragging.id)
-        if (!w) return
-        const newX = Math.max(0, Math.min(COLS - w.w, dragging.origX + dx))
-        const newY = Math.max(0, dragging.origY + dy)
-        const posKey = `d${newX},${newY}`
-        if (posKey === pushRef.current.pos) return
-        pushRef.current.pos = posKey
-        const moved = layout.map(lw => lw.id === dragging.id ? { ...lw, x: newX, y: newY } : { ...lw })
-        setPreviewLayout(moved)
-        clearTimeout(pushRef.current.timer)
-        pushRef.current.timer = setTimeout(() => {
-          setPreviewLayout(prev => prev ? resolveCollisions(prev, dragging.id) : prev)
-        }, 250)
-      }
-      if (resizing) {
-        const w = layout.find(w => w.id === resizing.id)
-        if (!w) return
-        const wt = WIDGET_TYPES.find(t => t.id === w.type)
-        const minW = wt?.minW || 4, minH = wt?.minH || 2
-        const dxC = Math.round((e.clientX - resizing.startX) / (cw + MINI_GAP))
-        const dyC = Math.round((e.clientY - resizing.startY) / (ch + MINI_GAP))
-        let nX = resizing.origX, nY = resizing.origY, nW = resizing.origW, nH = resizing.origH
-        if (resizing.edges.right) nW = resizing.origW + dxC
-        if (resizing.edges.left) { nX = resizing.origX + dxC; nW = resizing.origW - dxC }
-        if (resizing.edges.bottom) nH = resizing.origH + dyC
-        if (resizing.edges.top) { nY = resizing.origY + dyC; nH = resizing.origH - dyC }
-        if (nW < minW) { if (resizing.edges.left) nX = resizing.origX + resizing.origW - minW; nW = minW }
-        if (nH < minH) { if (resizing.edges.top) nY = resizing.origY + resizing.origH - minH; nH = minH }
-        if (nX < 0) { nW += nX; nX = 0 }
-        if (nY < 0) { nH += nY; nY = 0 }
-        if (nX + nW > COLS) nW = COLS - nX
-        if (nW < minW) nW = minW
-        const posKey = `r${nX},${nY},${nW},${nH}`
-        if (posKey === pushRef.current.pos) return
-        pushRef.current.pos = posKey
-        const moved = layout.map(lw => lw.id === resizing.id ? { ...lw, x: nX, y: nY, w: nW, h: nH } : { ...lw })
-        setPreviewLayout(moved)
-        clearTimeout(pushRef.current.timer)
-        pushRef.current.timer = setTimeout(() => {
-          setPreviewLayout(prev => prev ? resolveCollisions(prev, resizing.id) : prev)
-        }, 250)
-      }
-    }
-
-    const onUp = () => {
-      clearTimeout(pushRef.current.timer)
-      pushRef.current = { timer: null, pos: null }
-      if (previewLayout) {
-        const activeId = dragging?.id || resizing?.id
-        updateLayout(activeId ? resolveCollisions(previewLayout, activeId) : previewLayout)
-      }
-      setDragging(null); setResizing(null); setPreviewLayout(null)
-    }
-
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
-    return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
-  }, [dragging, resizing, previewLayout, layoutWidgets, getGridCellSize])
-
   const removeWidget = id => {
     const layout = ensureCustomLayout()
-    const updated = layout.filter(w => w.id !== id)
+    const updated = normalizeRows(layout.filter(w => w.id !== id))
     updateLayout(updated)
     if (selectedWidgetId === id) setSelectedWidgetId(null)
   }
@@ -258,9 +148,35 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
   const addWidget = typeId => {
     const layout = ensureCustomLayout()
     const w = createWidget(typeId, layout)
-    if (w) updateLayout([...layout, w])
+    if (w) updateLayout(normalizeRows([...layout, w]))
     setShowAddWidget(false)
   }
+
+  // Widget drag handlers for row-based reorder
+  const onWidgetDragStart = (e, widget) => {
+    setWidgetDragId(widget.id)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+  const onWidgetDragOver = (e, rowNum, side) => {
+    e.preventDefault()
+    setWidgetDropTarget({ row: rowNum, side })
+  }
+  const onWidgetDrop = () => {
+    if (!widgetDragId || !widgetDropTarget) { setWidgetDragId(null); setWidgetDropTarget(null); return }
+    const layout = ensureCustomLayout()
+    let result
+    if (widgetDropTarget.side === 'above') {
+      result = moveWidget(layout, widgetDragId, widgetDropTarget.row, 'new-row')
+    } else if (widgetDropTarget.side === 'below') {
+      result = moveWidget(layout, widgetDragId, widgetDropTarget.row + 1, 'new-row')
+    } else {
+      result = moveWidget(layout, widgetDragId, widgetDropTarget.row, 'into')
+    }
+    updateLayout(result)
+    setWidgetDragId(null)
+    setWidgetDropTarget(null)
+  }
+  const onWidgetDragEnd = () => { setWidgetDragId(null); setWidgetDropTarget(null) }
 
   // ── Prop editing (for properties widget config) ──
   const handlePropDragStart = (e, propId) => { setDragPropId(propId); e.dataTransfer.effectAllowed = 'move' }
@@ -299,9 +215,6 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
     updateLayout(updated)
   }
 
-  const activeGridId = dragging?.id || resizing?.id
-  const maxRow = displayLayout.reduce((max, w) => Math.max(max, w.y + w.h), 0)
-
   return (
     <div className="anim-fadeup">
       {/* Header */}
@@ -319,7 +232,7 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
         )}
       </div>
 
-      {/* Layout par défaut — Grid editor */}
+      {/* Layout par défaut — Row-based editor */}
       <section style={{ marginBottom:26 }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
           <h3 style={{ fontFamily:"var(--font)", fontSize:15, color:'var(--text-secondary,#c0c0c0)', fontWeight:500, margin:0 }}>Layout par defaut</h3>
@@ -333,75 +246,86 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
           )}
         </div>
 
-        {/* Mini grid */}
-        <div ref={gridRef} onClick={() => setSelectedWidgetId(null)} style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-          gridAutoRows: miniRowH,
-          gap: MINI_GAP,
-          position: 'relative',
-          minHeight: Math.max(4, maxRow) * (miniRowH + MINI_GAP),
+        {/* Row-based layout preview */}
+        <div onClick={() => setSelectedWidgetId(null)} style={{
+          display: 'flex', flexDirection: 'column', gap: 6,
           background: 'rgba(255,255,255,0.02)',
           borderRadius: 12,
           border: '1px solid rgba(255,255,255,0.06)',
-          padding: 6,
-        }}>
-          {displayLayout.map(widget => {
-            const wt = WIDGET_TYPES.find(t => t.id === widget.type)
-            const isSelected = selectedWidgetId === widget.id
-            const isActive = activeGridId === widget.id
+          padding: 8,
+        }}
+        onDragOver={e => e.preventDefault()}
+        onDrop={onWidgetDrop}>
+          {rows.map((rowWidgets, rowIdx) => {
+            const rowNum = rowWidgets[0]?.row ?? rowIdx
+            const showAbove = widgetDragId && widgetDropTarget?.row === rowNum && widgetDropTarget?.side === 'above'
+            const showBelow = widgetDragId && widgetDropTarget?.row === rowNum && widgetDropTarget?.side === 'below'
+            const showInto = widgetDragId && widgetDropTarget?.row === rowNum && widgetDropTarget?.side === 'into'
 
             return (
-              <div key={widget.id}
-                onClick={e => { e.stopPropagation(); setSelectedWidgetId(isSelected ? null : widget.id) }}
-                style={{
-                  gridColumn: `${widget.x + 1} / span ${widget.w}`,
-                  gridRow: `${widget.y + 1} / span ${widget.h}`,
-                  background: isSelected ? 'var(--accent-12,rgba(200,160,100,0.12))' : 'rgba(255,255,255,0.04)',
-                  border: isSelected ? '2px solid var(--accent-30,rgba(200,160,100,0.3))' : '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 8,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                  fontSize: 11, color: isSelected ? 'var(--accent,#c8a064)' : 'var(--text-muted,#8a8a8a)',
-                  cursor: 'pointer', position: 'relative',
-                  overflow: 'visible',
-                  opacity: isActive ? 0.7 : 1,
-                  transition: previewLayout ? (isActive ? 'none' : 'all 0.15s ease') : 'opacity 0.15s, background 0.1s',
-                  userSelect: 'none',
-                }}>
-                <span style={{ pointerEvents: 'none' }}>{wt?.icon}</span>
-                <span style={{ pointerEvents: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wt?.name}</span>
+              <React.Fragment key={rowNum}>
+                {/* Drop zone: above */}
+                <div
+                  onDragOver={e => onWidgetDragOver(e, rowNum, 'above')}
+                  style={{ height: showAbove ? 4 : 2, borderRadius: 2, background: showAbove ? 'var(--accent,#c8a064)' : 'transparent', transition: 'all 0.12s', margin: '0 4px' }}
+                />
 
-                {isSelected && (
-                  <>
-                    {/* Drag surface */}
-                    <div onMouseDown={e => onGridDragStart(e, widget)}
-                      onClick={e => e.stopPropagation()}
-                      style={{ position: 'absolute', inset: 6, cursor: 'grab', zIndex: 10 }} />
-                    {/* 8 resize handles */}
-                    {RESIZE_HANDLES.map(h => (
-                      <div key={h.id} onMouseDown={e => onGridResizeStart(e, widget, h.edges)}
-                        onClick={e => e.stopPropagation()}
+                <div style={{
+                  display: 'flex', gap: 6,
+                  outline: showInto ? '2px dashed var(--accent,#c8a064)' : 'none',
+                  outlineOffset: 2, borderRadius: 8,
+                  transition: 'outline 0.12s',
+                }}
+                onDragOver={e => { if (rowWidgets.length < 4) onWidgetDragOver(e, rowNum, 'into') }}>
+                  {rowWidgets.map(widget => {
+                    const wt = WIDGET_TYPES.find(t => t.id === widget.type)
+                    const isSelected = selectedWidgetId === widget.id
+                    const isDragged = widgetDragId === widget.id
+
+                    return (
+                      <div key={widget.id}
+                        draggable
+                        onDragStart={e => onWidgetDragStart(e, widget)}
+                        onDragEnd={onWidgetDragEnd}
+                        onClick={e => { e.stopPropagation(); setSelectedWidgetId(isSelected ? null : widget.id) }}
                         style={{
-                          position: 'absolute', ...h.style,
-                          width: 6, height: 6, borderRadius: 3,
-                          background: 'var(--accent,#c8a064)', border: '1px solid rgba(0,0,0,0.3)',
-                          cursor: h.cursor, zIndex: 11,
-                        }} />
-                    ))}
-                    {/* Delete button */}
-                    <button onClick={e => { e.stopPropagation(); removeWidget(widget.id) }}
-                      style={{ position: 'absolute', top: -7, right: -7, zIndex: 12, width: 14, height: 14, borderRadius: 7, background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.15)', color: '#888', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, padding: 0 }}
-                      onMouseEnter={e => e.currentTarget.style.color = 'var(--danger,#ef4444)'}
-                      onMouseLeave={e => e.currentTarget.style.color = '#888'}>
-                      ✕
-                    </button>
-                  </>
+                          flex: widget.flex || 1, minWidth: 0, padding: '10px 8px',
+                          background: isSelected ? 'var(--accent-12,rgba(200,160,100,0.12))' : 'rgba(255,255,255,0.04)',
+                          border: isSelected ? '2px solid var(--accent-30,rgba(200,160,100,0.3))' : '1px solid rgba(255,255,255,0.08)',
+                          borderRadius: 8,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          fontSize: 11, color: isSelected ? 'var(--accent,#c8a064)' : 'var(--text-muted,#8a8a8a)',
+                          cursor: 'grab', position: 'relative',
+                          opacity: isDragged ? 0.3 : 1,
+                          transition: 'opacity 0.12s, background 0.1s',
+                          userSelect: 'none',
+                        }}>
+                        <span style={{ pointerEvents: 'none' }}>{wt?.icon}</span>
+                        <span style={{ pointerEvents: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wt?.name}</span>
+
+                        {isSelected && (
+                          <button onClick={e => { e.stopPropagation(); removeWidget(widget.id) }}
+                            style={{ position: 'absolute', top: -7, right: -7, zIndex: 12, width: 14, height: 14, borderRadius: 7, background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.15)', color: '#888', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, padding: 0 }}
+                            onMouseEnter={e => e.currentTarget.style.color = 'var(--danger,#ef4444)'}
+                            onMouseLeave={e => e.currentTarget.style.color = '#888'}>
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Drop zone: below (only last row) */}
+                {rowIdx === rows.length - 1 && (
+                  <div
+                    onDragOver={e => onWidgetDragOver(e, rowNum, 'below')}
+                    style={{ height: showBelow ? 4 : 2, borderRadius: 2, background: showBelow ? 'var(--accent,#c8a064)' : 'transparent', transition: 'all 0.12s', margin: '0 4px' }}
+                  />
                 )}
-              </div>
+              </React.Fragment>
             )
           })}
-
-          {/* No ghost needed — pushed widgets animate to new positions */}
         </div>
 
         {/* Add widget */}
@@ -410,6 +334,7 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
             <LayoutAddWidgetMenu
               onAdd={addWidget}
               onClose={() => setShowAddWidget(false)}
+              excludeTypes={currentLayout.some(w => w.type === 'properties') ? ['properties'] : []}
             />
           ) : (
             <button onClick={() => setShowAddWidget(true)}
@@ -434,7 +359,7 @@ function TypeEditor({ type, isBuiltin, allTypes, onUpdate, onDelete }) {
 
           {selectedWidget.type === 'properties' && (() => {
             const claimedByOther = new Set()
-            displayLayout.forEach(w => {
+            currentLayout.forEach(w => {
               if (w.type === 'properties' && w.id !== selectedWidget.id && Array.isArray(w.config?.propIds)) {
                 w.config.propIds.forEach(id => claimedByOther.add(id))
               }
@@ -895,8 +820,9 @@ export function DropdownPropPicker({ allTypes, onAdd, onCancel }) {
 }
 
 // ─── LayoutAddWidgetMenu ──────────────────────────────────────
-function LayoutAddWidgetMenu({ onAdd, onClose }) {
+function LayoutAddWidgetMenu({ onAdd, onClose, excludeTypes }) {
   const ref = useRef()
+  const available = WIDGET_TYPES.filter(wt => !(excludeTypes || []).includes(wt.id))
   useEffect(() => {
     const h = e => { if (ref.current && !ref.current.contains(e.target)) onClose() }
     document.addEventListener('mousedown', h)
@@ -909,14 +835,13 @@ function LayoutAddWidgetMenu({ onAdd, onClose }) {
       border: '1px solid var(--border-14)', borderRadius: 10,
       overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.8)',
     }}>
-      {WIDGET_TYPES.map(wt => (
+      {available.map(wt => (
         <div key={wt.id} onClick={() => onAdd(wt.id)}
           style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', cursor: 'pointer', fontSize: 12, color: 'var(--text-muted,#8a8a8a)', transition: 'background 0.08s' }}
           onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
           <span style={{ width: 20, textAlign: 'center', fontSize: 14 }}>{wt.icon}</span>
           <span style={{ flex: 1 }}>{wt.name}</span>
-          <span style={{ fontSize: 10, color: 'var(--text-darker,#2e2e2e)' }}>{wt.defaultW}×{wt.defaultH}</span>
         </div>
       ))}
     </div>
